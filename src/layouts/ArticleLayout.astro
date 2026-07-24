@@ -53,16 +53,18 @@ const { title, summary, affectedSince, slug } = Astro.props;
     }
     .affected-badge {
       display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
+      align-items: flex-start;
+      gap: 0.5rem;
       background: rgba(255, 69, 58, 0.12);
       border: 1px solid rgba(255, 69, 58, 0.25);
       color: #ff6b63;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       font-weight: 600;
-      padding: 4px 12px;
-      border-radius: 20px;
+      padding: 5px 10px;
+      border-radius: 8px;
       font-family: 'SF Mono', 'Fira Code', monospace;
+      line-height: 1.5;
+      max-width: 100%;
     }
     .affected-badge::before {
       content: '';
@@ -70,7 +72,8 @@ const { title, summary, affectedSince, slug } = Astro.props;
       height: 6px;
       background: #ff453a;
       border-radius: 50%;
-      display: inline-block;
+      flex-shrink: 0;
+      margin-top: 0.35em;
     }
     .article-body {
       max-width: 72ch;
@@ -100,6 +103,9 @@ const { title, summary, affectedSince, slug } = Astro.props;
       color: #ccc;
       padding-left: 1.5rem;
       line-height: 1.75;
+    }
+    .article-body :global(.resource-list) {
+      padding-left: 0;
     }
     .article-body :global(li) {
       margin-bottom: 0.4rem;
