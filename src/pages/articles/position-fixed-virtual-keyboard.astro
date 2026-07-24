@@ -1,0 +1,290 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import IphoneMockup from '../../components/IphoneMockup.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import BrowserSupport from '../../components/BrowserSupport.astro';
+import ResourceList from '../../components/ResourceList.astro';
+
+const browserRows = [
+  { browser: 'Safari iOS (all)', version: 'All', supported: false, notes: 'position:fixed breaks when keyboard opens; layout viewport not resized' },
+  { browser: 'Safari iOS 15.4+', version: '15.4+', supported: 'partial', notes: 'dvh partially improves this; Visual Viewport API is the full fix' },
+  { browser: 'Chrome iOS', version: 'All', supported: false, notes: 'Same WebKit engine, same behaviour' },
+  { browser: 'Chrome Android', version: 'All', supported: true, notes: 'Keyboard resize handled correctly' },
+  { browser: 'Firefox', version: 'All', supported: true, notes: 'Keyboard resize handled correctly' },
+];
+
+const resources = [
+  {
+    title: 'MDN: Visual Viewport API',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/API/Visual_Viewport_API',
+    description: 'Documentation for window.visualViewport — the API to track the actual visible area.'
+  },
+  {
+    title: 'WebKit Blog: Viewport Changes in Safari 15',
+    url: 'https://webkit.org/blog/12445/new-webkit-features-in-safari-15-4/',
+    description: 'Explains the layout vs visual viewport split and the dvh units introduced in iOS 15.4.'
+  },
+  {
+    title: 'web.dev: "Virtual keyboard API"',
+    url: 'https://developer.chrome.com/docs/web-platform/virtual-keyboard',
+    description: 'Chrome\'s VirtualKeyboard API (Chrome Android) — different approach for Chromium.'
+  },
+];
+---
+
+<ArticleLayout
+  title="position: fixed Breaks with the Virtual Keyboard"
+  summary="When the software keyboard opens on iOS, position: fixed elements shift up with the keyboard instead of staying at the bottom of the visible area."
+  affectedSince="All iOS Safari (partially improved in iOS 15.4 with dvh)"
+  slug="position-fixed-virtual-keyboard"
+>
+  <style>
+    .mockup-center { display: flex; justify-content: flex-start; margin: 2rem 0; }
+
+    /* Chat app mockup */
+    .chat-phone {
+      position: absolute;
+      inset: 0;
+      background: #0d0d0d;
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-header {
+      height: 30px;
+      background: #1a1a1a;
+      border-bottom: 1px solid #2a2a2a;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      flex-shrink: 0;
+    }
+    .chat-avatar {
+      width: 16px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .chat-name {
+      font-size: 8px;
+      color: #fff;
+      font-weight: 700;
+    }
+    .chat-messages {
+      flex: 1;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+    .chat-bubble {
+      max-width: 75%;
+      height: 12px;
+      background: #2a2a2a;
+      border-radius: 10px 10px 10px 2px;
+    }
+    .chat-bubble.mine {
+      background: var(--accent);
+      border-radius: 10px 10px 2px 10px;
+      align-self: flex-end;
+    }
+    /* The keyboard */
+    .keyboard-area {
+      height: 90px;
+      background: #1c1c1e;
+      flex-shrink: 0;
+    }
+    .keyboard-row {
+      display: flex;
+      gap: 2px;
+      padding: 3px 4px 2px;
+      justify-content: center;
+    }
+    .key {
+      flex: 1;
+      height: 16px;
+      background: #3a3a3c;
+      border-radius: 3px;
+      max-width: 14px;
+    }
+    /* The displaced footer */
+    .chat-footer-displaced {
+      position: absolute;
+      left: 0;
+      right: 0;
+      /* This simulates the footer being pushed up above the keyboard */
+      bottom: 90px;
+      height: 28px;
+      background: #1a1a1a;
+      border-top: 1px solid #333;
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      gap: 6px;
+    }
+    .footer-input {
+      flex: 1;
+      background: #2a2a2a;
+      border-radius: 12px;
+      height: 18px;
+    }
+    .footer-send {
+      width: 18px;
+      height: 18px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .displaced-badge {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 6px;
+      font-weight: 700;
+      color: #ff453a;
+      white-space: nowrap;
+      background: rgba(0,0,0,0.7);
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+    .note {
+      background: rgba(10,132,255,0.07);
+      border: 1px solid rgba(10,132,255,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .note strong { color: var(--accent); }
+  </style>
+
+  <h2>The Problem</h2>
+
+  <p>
+    On iOS, when the software keyboard appears, elements styled with <code>position: fixed</code>
+    — toolbars, send buttons, nav bars — float up into the middle of the screen rather than
+    staying anchored to the bottom of the visible area.
+  </p>
+
+  <div class="mockup-center">
+    <IphoneMockup label="Footer displaced above keyboard">
+      <div class="chat-phone">
+        <div class="chat-header">
+          <div class="chat-avatar"></div>
+          <div class="chat-name">Messages</div>
+        </div>
+        <div class="chat-messages">
+          <div class="chat-bubble"></div>
+          <div class="chat-bubble" style="width:60%"></div>
+          <div class="chat-bubble mine"></div>
+        </div>
+        <div class="keyboard-area">
+          <div class="keyboard-row">
+            {Array.from({length: 10}).map(() => <div class="key"></div>)}
+          </div>
+          <div class="keyboard-row">
+            {Array.from({length: 9}).map(() => <div class="key"></div>)}
+          </div>
+          <div class="keyboard-row">
+            {Array.from({length: 7}).map(() => <div class="key"></div>)}
+          </div>
+        </div>
+        <div class="chat-footer-displaced">
+          <div class="footer-input"></div>
+          <div class="footer-send"></div>
+          <div class="displaced-badge">displaced!</div>
+        </div>
+      </div>
+    </IphoneMockup>
+  </div>
+
+  <h2>Root Cause</h2>
+
+  <p>
+    iOS separates the <strong>layout viewport</strong> (what CSS sees and <code>position: fixed</code> is relative to)
+    from the <strong>visual viewport</strong> (the actual visible area of the screen). When the software keyboard appears,
+    the visual viewport shrinks, but the <em>layout viewport does not change</em>.
+  </p>
+
+  <p>
+    <code>position: fixed</code> elements are positioned relative to the layout viewport. So a footer with
+    <code>bottom: 0</code> stays at the bottom of the full-screen layout viewport — which is now mostly hidden
+    behind the keyboard.
+  </p>
+
+  <h2>Fix 1 — position: sticky for in-flow footers</h2>
+
+  <p>
+    The simplest fix when the footer is part of a flex/grid column layout: use <code>position: sticky</code> instead of fixed.
+    Sticky elements stay attached to their scroll container without the layout-viewport problem.
+  </p>
+
+  <CodeBlock
+    lang="css"
+    filename="chat.css"
+    code={`.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh; /* tracks actual visible height */
+}
+
+.messages-list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chat-footer {
+  position: sticky;
+  bottom: 0;
+  flex-shrink: 0;
+  background: #1a1a1a;
+  padding: 0.75rem;
+}`}
+  />
+
+  <h2>Fix 2 — Visual Viewport API (Full control)</h2>
+
+  <p>
+    For complex cases — full-screen apps, iframes, or elements that genuinely need <code>position: fixed</code>
+    — use the Visual Viewport API to track the actual visible window and adjust manually.
+  </p>
+
+  <CodeBlock
+    lang="js"
+    filename="viewport-fix.js"
+    code={`const footer = document.querySelector('.app-footer');
+
+function repositionFooter() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+
+  // Offset by the amount the keyboard has consumed
+  const keyboardHeight = window.innerHeight - vv.height;
+  footer.style.transform = \`translateY(-\${keyboardHeight}px)\`;
+}
+
+window.visualViewport?.addEventListener('resize', repositionFooter);
+window.visualViewport?.addEventListener('scroll', repositionFooter);`}
+  />
+
+  <div class="note">
+    <strong>Note:</strong> The Visual Viewport API is supported on iOS Safari 13+ and all modern browsers.
+    Always check for <code>window.visualViewport</code> before using it.
+  </div>
+
+  <h2>Browser Support</h2>
+
+  <BrowserSupport rows={browserRows} />
+
+  <h2>Further Reading</h2>
+
+  <ResourceList links={resources} />
+</ArticleLayout>

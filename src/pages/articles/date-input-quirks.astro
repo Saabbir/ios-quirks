@@ -1,0 +1,358 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import IphoneMockup from '../../components/IphoneMockup.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import BrowserSupport from '../../components/BrowserSupport.astro';
+import ResourceList from '../../components/ResourceList.astro';
+
+const browserRows = [
+  { browser: 'Safari iOS', version: 'All', supported: 'partial', notes: 'Renders as native drum-wheel picker — not styleable with CSS' },
+  { browser: 'Chrome iOS', version: 'All', supported: 'partial', notes: 'Same WebKit engine — same native picker' },
+  { browser: 'Chrome Android', version: 'All', supported: 'partial', notes: 'Native Android date picker (Material) — different but also hard to style' },
+  { browser: 'Firefox', version: 'All', supported: true, notes: 'Custom styleable date picker; -moz-appearance: none supported' },
+  { browser: 'Safari macOS', version: 'All', supported: 'partial', notes: 'Renders inline — minimal styling via appearance:none' },
+  { browser: 'Chrome macOS/Windows', version: 'All', supported: true, notes: 'Custom styleable date widget' },
+];
+
+const resources = [
+  {
+    title: 'MDN: <input type="date">',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date',
+    description: 'Full reference for the date input type including notes on mobile behaviour.'
+  },
+  {
+    title: 'Can I Use: date input',
+    url: 'https://caniuse.com/input-datetime',
+    description: 'Browser compatibility for date, time, datetime-local inputs across browsers.'
+  },
+  {
+    title: 'Flatpickr documentation',
+    url: 'https://flatpickr.js.org/',
+    description: 'Lightweight, dependency-free date picker library with full CSS customisation.'
+  },
+];
+---
+
+<ArticleLayout
+  title={'<input type="date"> Inconsistencies'}
+  summary="Date and time inputs render as a native iOS date picker wheel on Safari, ignoring CSS styling and behaving differently from desktop or Android."
+  affectedSince="All iOS Safari versions"
+  slug="date-input-quirks"
+>
+  <style>
+    .mockup-center { display: flex; justify-content: flex-start; margin: 2rem 0; }
+
+    .date-phone {
+      position: absolute;
+      inset: 0;
+      background: #111;
+      display: flex;
+      flex-direction: column;
+    }
+    .date-content {
+      padding: 32px 12px 8px;
+      flex-shrink: 0;
+    }
+    .date-label {
+      font-size: 8px;
+      color: #888;
+      margin-bottom: 4px;
+    }
+    .date-field {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 8px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .date-field-text {
+      font-size: 9px;
+      color: #ccc;
+      font-family: monospace;
+    }
+    .date-field-icon {
+      margin-left: auto;
+      color: var(--accent);
+    }
+    /* iOS drum picker */
+    .drum-picker {
+      flex: 1;
+      background: #1c1c1e;
+      border-top: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .picker-toolbar {
+      height: 28px;
+      background: #2c2c2e;
+      border-bottom: 1px solid #3a3a3a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+    }
+    .picker-cancel {
+      font-size: 8px;
+      color: var(--accent);
+    }
+    .picker-done {
+      font-size: 8px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .picker-title {
+      font-size: 8px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .picker-columns {
+      flex: 1;
+      display: flex;
+      position: relative;
+    }
+    .picker-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      overflow: hidden;
+    }
+    .picker-col-label {
+      font-size: 6px;
+      color: #666;
+      margin-bottom: 2px;
+    }
+    .picker-item {
+      font-size: 9px;
+      color: #555;
+      padding: 3px 0;
+      width: 100%;
+      text-align: center;
+    }
+    .picker-item.selected {
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .picker-selection-bar {
+      position: absolute;
+      top: 50%;
+      left: 8px;
+      right: 8px;
+      height: 24px;
+      background: rgba(255,255,255,0.05);
+      border-top: 1px solid #3a3a3a;
+      border-bottom: 1px solid #3a3a3a;
+      transform: translateY(-50%);
+      pointer-events: none;
+      border-radius: 4px;
+    }
+    .unstyleable-badge {
+      position: absolute;
+      top: 32px;
+      right: 4px;
+      background: #ff453a;
+      color: #fff;
+      font-size: 6px;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .note {
+      background: rgba(10,132,255,0.07);
+      border: 1px solid rgba(10,132,255,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .note strong { color: var(--accent); }
+    .tip {
+      background: rgba(48,209,88,0.07);
+      border: 1px solid rgba(48,209,88,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .tip strong { color: #30d158; }
+  </style>
+
+  <h2>The Problem</h2>
+
+  <p>
+    On iOS Safari, <code>&lt;input type="date"&gt;</code> opens a native <strong>UIDatePicker</strong> — a
+    spinning drum-wheel interface that pops up from the bottom of the screen. This is familiar iOS UX, but
+    it's completely impossible to style with CSS. Any custom design system that relies on a consistent date
+    picker widget across platforms will look different (or broken) on iOS.
+  </p>
+
+  <div class="mockup-center">
+    <IphoneMockup label="Native iOS drum picker — not styleable">
+      <div class="date-phone">
+        <div class="date-content">
+          <div class="date-label">Check-in date</div>
+          <div class="date-field">
+            <span class="date-field-text">2026-07-15</span>
+            <svg class="date-field-icon" width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <rect x="1" y="2" width="10" height="9" rx="2" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M4 1v2M8 1v2M1 5h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="drum-picker">
+          <div class="picker-toolbar">
+            <span class="picker-cancel">Cancel</span>
+            <span class="picker-title">Select Date</span>
+            <span class="picker-done">Done</span>
+          </div>
+          <div class="picker-columns">
+            <div class="picker-col">
+              <div class="picker-item">June</div>
+              <div class="picker-item">July</div>
+              <div class="picker-item selected">Aug</div>
+              <div class="picker-item">Sep</div>
+              <div class="picker-item">Oct</div>
+            </div>
+            <div class="picker-col">
+              <div class="picker-item">13</div>
+              <div class="picker-item">14</div>
+              <div class="picker-item selected">15</div>
+              <div class="picker-item">16</div>
+              <div class="picker-item">17</div>
+            </div>
+            <div class="picker-col">
+              <div class="picker-item">2024</div>
+              <div class="picker-item">2025</div>
+              <div class="picker-item selected">2026</div>
+              <div class="picker-item">2027</div>
+              <div class="picker-item">2028</div>
+            </div>
+            <div class="picker-selection-bar"></div>
+          </div>
+        </div>
+        <span class="unstyleable-badge">CSS styling: none</span>
+      </div>
+    </IphoneMockup>
+  </div>
+
+  <h2>Root Cause</h2>
+
+  <p>
+    Safari on iOS renders <code>&lt;input type="date"&gt;</code> as a native UIKit component — a
+    <code>UIDatePicker</code> in "wheels" style. This is controlled at the OS level and WebKit delegates
+    rendering entirely to native UIKit, bypassing CSS styling hooks. The value format is also normalised
+    by iOS before being exposed to JavaScript, which can differ from other platforms.
+  </p>
+
+  <h2>Option 1 — Accept native behaviour, style the trigger field</h2>
+
+  <p>
+    The simplest approach: accept the native picker (it provides good UX for iOS users) and style only the
+    input field itself — the visible trigger before the picker opens.
+  </p>
+
+  <CodeBlock
+    lang="css"
+    filename="date-input.css"
+    code={`/* Style the input trigger field (not the picker) */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 16px; /* prevent auto-zoom on iOS */
+  font-family: inherit;
+  width: 100%;
+  background: #fff;
+  color: #000;
+}
+
+/* Focus state */
+input[type="date"]:focus {
+  outline: none;
+  border-color: #007aff;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}`}
+  />
+
+  <h2>Option 2 — JavaScript date picker library</h2>
+
+  <p>
+    For a fully consistent cross-platform UI, use a JS library that suppresses the native picker and renders
+    its own calendar. <strong>Flatpickr</strong> is lightweight (~16kb gzipped), zero-dependency, and works
+    identically on all platforms.
+  </p>
+
+  <CodeBlock
+    lang="html"
+    filename="datepicker.html"
+    code={`<!-- Flatpickr: fully custom, works on iOS -->
+<link rel="stylesheet" href="flatpickr.min.css">
+<script src="flatpickr.min.js"><\/script>
+
+<input type="text" id="datepicker" placeholder="YYYY-MM-DD">
+
+<script>
+  flatpickr("#datepicker", {
+    dateFormat: "Y-m-d",
+    allowInput: true,
+    // Prevents iOS from showing native keyboard for the text field
+    disableMobile: false,
+  });
+<\/script>`}
+  />
+
+  <h2>Option 3 — text input with inputmode</h2>
+
+  <p>
+    For simple cases, use a text input with the <code>inputmode</code> attribute to show a numeric keyboard
+    and a regex <code>pattern</code> for validation. No picker at all.
+  </p>
+
+  <CodeBlock
+    lang="html"
+    filename="text-date.html"
+    code={`<label for="date">Date (YYYY-MM-DD)</label>
+<input
+  type="text"
+  id="date"
+  name="date"
+  inputmode="numeric"
+  placeholder="2026-07-15"
+  pattern="\\d{4}-\\d{2}-\\d{2}"
+  title="Enter a date in YYYY-MM-DD format"
+>`}
+  />
+
+  <div class="tip">
+    <strong>Recommendation by use case:</strong><br />
+    Simple forms with familiar UX: <strong>Option 1</strong> (native picker, styled trigger).<br />
+    Design-system components needing pixel-perfect cross-platform consistency: <strong>Option 2</strong> (Flatpickr).<br />
+    Admin tools or power-user interfaces: <strong>Option 3</strong> (text + inputmode).
+  </div>
+
+  <h2>Browser Support</h2>
+
+  <BrowserSupport rows={browserRows} />
+
+  <h2>Further Reading</h2>
+
+  <ResourceList links={resources} />
+</ArticleLayout>

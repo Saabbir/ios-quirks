@@ -1,0 +1,148 @@
+---
+interface SupportRow {
+  browser: string;
+  version: string;
+  supported: boolean | 'partial';
+  notes?: string;
+}
+
+interface Props {
+  rows: SupportRow[];
+}
+
+const { rows } = Astro.props;
+---
+
+<div class="support-table-wrap">
+  <table class="support-table">
+    <thead>
+      <tr>
+        <th>Browser</th>
+        <th>Min Version</th>
+        <th>Status</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((row) => (
+        <tr>
+          <td class="browser-cell">{row.browser}</td>
+          <td class="version-cell">{row.version}</td>
+          <td class="status-cell">
+            {row.supported === true && (
+              <span class="status supported">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="#30d158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Supported
+              </span>
+            )}
+            {row.supported === false && (
+              <span class="status unsupported">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 2l8 8M10 2l-8 8" stroke="#ff453a" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+                Not supported
+              </span>
+            )}
+            {row.supported === 'partial' && (
+              <span class="status partial">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6h8" stroke="#ffd60a" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Partial
+              </span>
+            )}
+          </td>
+          <td class="notes-cell">{row.notes || '—'}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .support-table-wrap {
+    overflow-x: auto;
+    margin: 1.25rem 0;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+
+  .support-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    min-width: 480px;
+  }
+
+  .support-table thead {
+    background: #161616;
+  }
+
+  .support-table th {
+    padding: 0.6rem 1rem;
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .support-table td {
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  .support-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .support-table tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .browser-cell {
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .version-cell {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .notes-cell {
+    color: #999;
+    font-size: 0.82rem;
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  .status.supported {
+    color: #30d158;
+    background: rgba(48, 209, 88, 0.1);
+  }
+
+  .status.unsupported {
+    color: #ff453a;
+    background: rgba(255, 69, 58, 0.1);
+  }
+
+  .status.partial {
+    color: #ffd60a;
+    background: rgba(255, 214, 10, 0.1);
+  }
+</style>

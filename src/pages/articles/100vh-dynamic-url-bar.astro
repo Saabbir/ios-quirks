@@ -1,0 +1,273 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import IphoneMockup from '../../components/IphoneMockup.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import BrowserSupport from '../../components/BrowserSupport.astro';
+import ResourceList from '../../components/ResourceList.astro';
+
+const browserRows = [
+  { browser: 'Safari iOS', version: '15.4+', supported: true, notes: 'dvh supported; older falls back to 100vh' },
+  { browser: 'Safari iOS (older)', version: '< 15.4', supported: 'partial', notes: '100vh fallback — footer still clipped, no crash' },
+  { browser: 'Chrome Android', version: '108+', supported: true, notes: 'Full dvh support' },
+  { browser: 'Firefox', version: '101+', supported: true, notes: 'Full dvh support' },
+];
+
+const resources = [
+  {
+    title: 'MDN: CSS viewport units (svh / dvh / lvh)',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/length#viewport-percentage_lengths',
+    description: 'Complete reference for all new viewport-relative length units.'
+  },
+  {
+    title: 'WebKit Blog: "Interoperable Viewport Units"',
+    url: 'https://webkit.org/blog/12445/new-webkit-features-in-safari-15-4/',
+    description: 'Safari 15.4 release notes covering the new dvh, svh, lvh, dvw units.'
+  },
+  {
+    title: 'web.dev: The large, small, and dynamic viewport units',
+    url: 'https://web.dev/articles/viewport-units',
+    description: 'In-depth explainer on why these new units exist and how to use them.'
+  },
+  {
+    title: 'Can I Use: dvh',
+    url: 'https://caniuse.com/viewport-unit-variants',
+    description: 'Browser compatibility table for dynamic viewport units.'
+  },
+];
+---
+
+<ArticleLayout
+  title="100vh and Safari's Dynamic URL Bar"
+  summary="Elements sized to 100vh overflow the visible screen when Safari's URL bar is visible, hiding content at the bottom."
+  affectedSince="All iOS Safari versions · dvh fix available since iOS 15.4"
+  slug="100vh-dynamic-url-bar"
+>
+  <style>
+    .mockups-row {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      margin: 2rem 0;
+    }
+    .mockup-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .mockup-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .mockup-label.before { color: #ff453a; }
+    .mockup-label.after { color: #30d158; }
+
+    /* Before: filter drawer */
+    .drawer-before {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .drawer-url-bar {
+      height: 38px;
+      background: #1c1c1e;
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .drawer-url-pill {
+      background: #2c2c2e;
+      border-radius: 8px;
+      height: 20px;
+      flex: 1;
+    }
+    .drawer-content {
+      flex: 1;
+      background: #1a1a1a;
+      padding: 8px;
+      overflow: hidden;
+    }
+    .drawer-filter-item {
+      height: 18px;
+      background: #2a2a2a;
+      border-radius: 4px;
+      margin-bottom: 6px;
+    }
+    .drawer-filter-item:nth-child(2) { width: 80%; }
+    .drawer-filter-item:nth-child(3) { width: 65%; }
+    /* The clipped footer */
+    .drawer-footer-clipped {
+      height: 30px;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      color: #fff;
+      font-weight: 700;
+      /* Only show top half — simulates 100vh clipping */
+      clip-path: inset(0 0 50% 0);
+      position: relative;
+    }
+    .drawer-footer-clipped-text {
+      position: absolute;
+      top: 5px;
+      font-size: 8px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .clip-indicator {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #ff453a;
+    }
+
+    /* After: footer visible */
+    .drawer-after {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .drawer-footer-full {
+      height: 30px;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      color: #fff;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .callout {
+      background: rgba(10,132,255,0.08);
+      border: 1px solid rgba(10,132,255,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .callout strong { color: #fff; }
+  </style>
+
+  <h2>The Problem</h2>
+
+  <p>
+    On iOS Safari, the URL bar is dynamic — it slides away as you scroll down, and reappears when you scroll up.
+    This is great for UX, but it creates a trap: <code>100vh</code> is computed against the <strong>large viewport height</strong>
+    (URL bar hidden), not the <strong>actual visible area</strong> when the page first loads.
+  </p>
+
+  <p>
+    Result: any element pinned to the bottom of a <code>100vh</code> container — a sticky footer, a "View Results" button,
+    a chat input — is hidden behind the URL bar on initial page load.
+  </p>
+
+  <div class="mockups-row">
+    <div class="mockup-group">
+      <span class="mockup-label before">Before (100vh)</span>
+      <IphoneMockup label="Footer hidden behind URL bar">
+        <div class="drawer-before">
+          <div class="drawer-url-bar">
+            <div class="drawer-url-pill"></div>
+          </div>
+          <div class="drawer-content">
+            <div class="drawer-filter-item"></div>
+            <div class="drawer-filter-item"></div>
+            <div class="drawer-filter-item"></div>
+            <div class="drawer-filter-item" style="width:90%"></div>
+            <div class="drawer-filter-item" style="width:55%"></div>
+          </div>
+          <div style="position:relative;height:0;overflow:visible">
+            <div class="drawer-footer-clipped">
+              <span class="drawer-footer-clipped-text">VIEW RESULTS</span>
+            </div>
+            <div class="clip-indicator"></div>
+          </div>
+        </div>
+      </IphoneMockup>
+    </div>
+
+    <div class="mockup-group">
+      <span class="mockup-label after">After (100dvh)</span>
+      <IphoneMockup label="Footer fully visible">
+        <div class="drawer-after">
+          <div class="drawer-url-bar">
+            <div class="drawer-url-pill"></div>
+          </div>
+          <div class="drawer-content" style="flex:1">
+            <div class="drawer-filter-item"></div>
+            <div class="drawer-filter-item"></div>
+            <div class="drawer-filter-item"></div>
+            <div class="drawer-filter-item" style="width:90%"></div>
+            <div class="drawer-filter-item" style="width:55%"></div>
+          </div>
+          <div class="drawer-footer-full">VIEW RESULTS</div>
+        </div>
+      </IphoneMockup>
+    </div>
+  </div>
+
+  <h2>Root Cause</h2>
+
+  <p>
+    On iOS Safari, <code>100vh</code> equals the <strong>large viewport height</strong> — the full screen height
+    assuming the URL bar is retracted. When a user first loads the page, the URL bar is visible and occupies
+    roughly 60px at the bottom of the visible area. Elements sitting at the bottom of a <code>100vh</code> container
+    are scrolled out of view behind the URL bar.
+  </p>
+
+  <div class="callout">
+    <strong>The three viewport heights:</strong><br />
+    <code>svh</code> — small viewport height (URL bar always visible) &nbsp;|&nbsp;
+    <code>lvh</code> — large viewport height (URL bar hidden) = old <code>vh</code> &nbsp;|&nbsp;
+    <code>dvh</code> — dynamic viewport height (tracks real visible area in real time)
+  </div>
+
+  <h2>The Fix</h2>
+
+  <CodeBlock
+    lang="css"
+    filename="drawer.css"
+    code={`.drawer {
+  height: 100vh;   /* fallback for older browsers */
+  height: 100dvh;  /* iOS 15.4+: tracks actual visible height dynamically */
+}
+
+/* Or use min-height for flexible content: */
+.page-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+}`}
+  />
+
+  <p>
+    <code>dvh</code> (dynamic viewport height) recalculates in real time as the URL bar shows and hides.
+    On page load when the URL bar is visible, <code>100dvh</code> will be approximately <code>100lvh - 60px</code>,
+    meaning your footer stays inside the visible window.
+  </p>
+
+  <h2>Browser Support</h2>
+
+  <BrowserSupport rows={browserRows} />
+
+  <h2>Further Reading</h2>
+
+  <ResourceList links={resources} />
+</ArticleLayout>

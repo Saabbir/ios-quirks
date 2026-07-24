@@ -1,0 +1,284 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import IphoneMockup from '../../components/IphoneMockup.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import BrowserSupport from '../../components/BrowserSupport.astro';
+import ResourceList from '../../components/ResourceList.astro';
+
+const browserRows = [
+  { browser: 'Safari iOS 10+', version: '10+', supported: 'partial', notes: 'Autoplay only with muted + playsinline; audio requires user gesture' },
+  { browser: 'Safari iOS < 10', version: '< 10', supported: false, notes: 'No autoplay at all — requires user tap' },
+  { browser: 'Chrome iOS', version: 'All', supported: 'partial', notes: 'Same WebKit engine — requires muted + playsinline' },
+  { browser: 'Chrome Android', version: '53+', supported: true, notes: 'Muted autoplay allowed; unmuted requires user gesture' },
+  { browser: 'Firefox', version: 'All', supported: 'partial', notes: 'Unmuted autoplay may be blocked by browser policy' },
+  { browser: 'Safari macOS', version: '11+', supported: 'partial', notes: 'Muted autoplay allowed; unmuted blocked by default' },
+];
+
+const resources = [
+  {
+    title: 'WebKit Blog: "New Video Policies for iOS"',
+    url: 'https://webkit.org/blog/6784/new-video-policies-for-ios/',
+    description: 'The original announcement of iOS 10 autoplay restrictions and playsinline attribute.'
+  },
+  {
+    title: 'MDN: HTMLMediaElement.play()',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/play',
+    description: 'Returns a Promise — lets you detect and handle autoplay failures gracefully.'
+  },
+  {
+    title: 'Apple Developer: Media Autoplay',
+    url: 'https://developer.apple.com/documentation/webkit/delivering_video_content_for_safari',
+    description: 'Apple\'s official documentation on delivering video content for Safari on iOS.'
+  },
+];
+---
+
+<ArticleLayout
+  title="Video Autoplay Restrictions"
+  summary="iOS Safari blocks video autoplay unless the video is muted and marked as inline. Audio never autoplays without a user gesture."
+  affectedSince="iOS 10+ (2016)"
+  slug="video-autoplay"
+>
+  <style>
+    .mockup-center { display: flex; justify-content: flex-start; margin: 2rem 0; }
+
+    .video-phone {
+      position: absolute;
+      inset: 0;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+    }
+    .video-area {
+      flex: 1;
+      background: #0a0a0a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding-top: 32px;
+    }
+    .video-thumbnail {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* video frame lines */
+    .video-thumbnail::before,
+    .video-thumbnail::after {
+      content: '';
+      position: absolute;
+      left: 15px;
+      right: 15px;
+      height: 1px;
+      background: rgba(255,255,255,0.05);
+    }
+    .video-thumbnail::before { top: 40%; }
+    .video-thumbnail::after { top: 60%; }
+    .play-btn {
+      width: 44px;
+      height: 44px;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.5);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .play-triangle {
+      width: 0;
+      height: 0;
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+      border-left: 14px solid rgba(255,255,255,0.8);
+      margin-left: 3px;
+    }
+    .blocked-badge {
+      position: absolute;
+      top: 36px;
+      right: 6px;
+      background: #ff453a;
+      color: #fff;
+      font-size: 6px;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+    .video-controls {
+      height: 28px;
+      background: #1c1c1e;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      gap: 6px;
+    }
+    .ctrl-bar {
+      flex: 1;
+      height: 3px;
+      background: #3a3a3c;
+      border-radius: 2px;
+    }
+    .ctrl-progress {
+      width: 30%;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .note {
+      background: rgba(10,132,255,0.07);
+      border: 1px solid rgba(10,132,255,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .note strong { color: var(--accent); }
+    .warning {
+      background: rgba(255,214,10,0.07);
+      border: 1px solid rgba(255,214,10,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .warning strong { color: #ffd60a; }
+  </style>
+
+  <h2>The Problem</h2>
+
+  <p>
+    A video with the <code>autoplay</code> attribute plays automatically on desktop and Android, but sits paused
+    on iOS Safari — even for silent background videos, hero loops, or ambient animations. The browser silently
+    ignores the <code>autoplay</code> attribute without throwing any errors.
+  </p>
+
+  <div class="mockup-center">
+    <IphoneMockup label="Video paused — autoplay blocked">
+      <div class="video-phone">
+        <div class="video-area">
+          <div class="video-thumbnail">
+            <div class="play-btn">
+              <div class="play-triangle"></div>
+            </div>
+          </div>
+          <div class="blocked-badge">AUTOPLAY BLOCKED</div>
+        </div>
+        <div class="video-controls">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="rgba(255,255,255,0.5)">
+            <path d="M3 2l7 4-7 4V2z"/>
+          </svg>
+          <div class="ctrl-progress"></div>
+          <div class="ctrl-bar" style="flex:2"></div>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="rgba(255,255,255,0.4)">
+            <path d="M1 1h3v3H1zm5 0h3v3H6zm-5 5h3v3H1zm5 0h3v3H6z"/>
+          </svg>
+        </div>
+      </div>
+    </IphoneMockup>
+  </div>
+
+  <h2>Root Cause</h2>
+
+  <p>
+    Apple introduced video autoplay restrictions in iOS 10 as a response to user complaints about mobile data
+    usage and battery drain. The policy: video can autoplay only if it is <strong>muted</strong> AND marked
+    with the <code>playsinline</code> attribute. Audio (or unmuted video) requires an explicit user gesture — a tap.
+  </p>
+
+  <p>
+    Without <code>playsinline</code>, iOS Safari opens the video in its full-screen native player, which also
+    blocks autoplay. Without <code>muted</code>, even <code>playsinline</code> videos won't autoplay.
+  </p>
+
+  <h2>Fix — Required attributes for autoplay</h2>
+
+  <CodeBlock
+    lang="html"
+    filename="hero-video.html"
+    code={`<!-- All three attributes are required for iOS autoplay -->
+<video
+  autoplay
+  muted
+  playsinline
+  loop
+  preload="auto"
+>
+  <source src="hero.mp4" type="video/mp4">
+  <source src="hero.webm" type="video/webm">
+</video>`}
+  />
+
+  <div class="note">
+    <strong>All three must be present:</strong> <code>autoplay</code> requests it, <code>muted</code> satisfies
+    iOS policy, and <code>playsinline</code> prevents the fullscreen player from launching.
+  </div>
+
+  <h2>Fix — Handle autoplay failure gracefully</h2>
+
+  <p>
+    The <code>video.play()</code> method returns a Promise that rejects if autoplay is blocked. Use this to
+    show a play button as fallback.
+  </p>
+
+  <CodeBlock
+    lang="js"
+    filename="video-autoplay.js"
+    code={`const video = document.querySelector('video');
+
+const playPromise = video.play();
+
+if (playPromise !== undefined) {
+  playPromise
+    .then(() => {
+      // Autoplay started — hide any play button overlay
+      document.querySelector('.play-overlay')?.remove();
+    })
+    .catch((error) => {
+      // Autoplay was blocked — show play button
+      document.querySelector('.play-overlay')?.classList.add('visible');
+      console.warn('Autoplay blocked:', error);
+    });
+}`}
+  />
+
+  <h2>Fix — Videos that need audio (user-gesture required)</h2>
+
+  <CodeBlock
+    lang="js"
+    filename="audio-video.js"
+    code={`// Videos with audio must start from a user interaction
+const playBtn = document.querySelector('#play-btn');
+const video = document.querySelector('video');
+
+playBtn.addEventListener('click', async () => {
+  video.muted = false; // unmute now that we have a gesture
+  try {
+    await video.play();
+    playBtn.style.display = 'none';
+  } catch (err) {
+    console.error('Play failed:', err);
+  }
+});`}
+  />
+
+  <div class="warning">
+    <strong>Important:</strong> There is no way around the user-gesture requirement for audio. Apple enforces
+    this at the OS level. Any library or hack that claims otherwise will eventually stop working after a Safari update.
+  </div>
+
+  <h2>Browser Support</h2>
+
+  <BrowserSupport rows={browserRows} />
+
+  <h2>Further Reading</h2>
+
+  <ResourceList links={resources} />
+</ArticleLayout>

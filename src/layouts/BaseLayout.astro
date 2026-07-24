@@ -1,0 +1,104 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'A practical reference for web developers documenting common iOS Safari bugs and fixes.' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+    <style>
+      .site-nav {
+        background: rgba(15, 15, 15, 0.92);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .site-nav-inner {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+      .site-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #fff;
+        text-decoration: none;
+        letter-spacing: -0.01em;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .site-name-icon {
+        width: 22px;
+        height: 22px;
+        background: var(--accent);
+        border-radius: 5px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+      .site-name:hover { text-decoration: none; color: #fff; }
+      .nav-badge {
+        margin-left: auto;
+        font-size: 0.7rem;
+        background: var(--card);
+        border: 1px solid var(--border);
+        padding: 2px 8px;
+        border-radius: 20px;
+        color: var(--muted);
+        font-family: 'SF Mono', 'Fira Code', monospace;
+      }
+      .site-footer {
+        margin-top: 5rem;
+        border-top: 1px solid var(--border);
+        padding: 2rem 1.5rem;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+      .site-footer a { color: var(--muted); }
+      .site-footer a:hover { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <nav class="site-nav">
+      <div class="site-nav-inner">
+        <a href="/" class="site-name">
+          <span class="site-name-icon">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M2 3h10M2 7h7M2 11h5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </span>
+          iOS Safari Quirks
+        </a>
+        <span class="nav-badge">10 articles</span>
+      </div>
+    </nav>
+
+    <slot />
+
+    <footer class="site-footer">
+      Built with <a href="https://astro.build" target="_blank" rel="noopener">Astro</a> &amp; Tailwind CSS &mdash; A developer reference for iOS Safari web quirks.
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,141 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  summary: string;
+  affectedSince: string;
+  slug: string;
+}
+
+const { title, summary, affectedSince, slug } = Astro.props;
+---
+
+<BaseLayout title={`${title} — iOS Safari Quirks`} description={summary}>
+  <style>
+    .article-hero {
+      border-bottom: 1px solid var(--border);
+      padding: 3.5rem 1.5rem 3rem;
+      background: linear-gradient(180deg, rgba(10,132,255,0.04) 0%, transparent 100%);
+    }
+    .article-hero-inner {
+      max-width: 72ch;
+      margin: 0 auto;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 2rem;
+      transition: color 0.15s;
+    }
+    .back-link:hover { color: var(--accent); text-decoration: none; }
+    .back-link svg { flex-shrink: 0; }
+    .article-title {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.02em;
+    }
+    .article-title code {
+      font-size: 0.85em;
+      background: rgba(255,255,255,0.07);
+      padding: 0.1em 0.3em;
+      border-radius: 4px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .article-summary {
+      font-size: 1.05rem;
+      color: #bbb;
+      margin-bottom: 1.25rem;
+      line-height: 1.65;
+    }
+    .affected-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255, 69, 58, 0.12);
+      border: 1px solid rgba(255, 69, 58, 0.25);
+      color: #ff6b63;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .affected-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: #ff453a;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .article-body {
+      max-width: 72ch;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+    .article-body :global(h2) {
+      font-size: 1.25rem;
+      margin-top: 2.5rem;
+      margin-bottom: 0.75rem;
+      color: #fff;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .article-body :global(h3) {
+      font-size: 1.05rem;
+      margin-top: 1.75rem;
+      margin-bottom: 0.5rem;
+      color: #ddd;
+    }
+    .article-body :global(p) {
+      color: #ccc;
+      line-height: 1.75;
+      margin-bottom: 1rem;
+    }
+    .article-body :global(ul), .article-body :global(ol) {
+      color: #ccc;
+      padding-left: 1.5rem;
+      line-height: 1.75;
+    }
+    .article-body :global(li) {
+      margin-bottom: 0.4rem;
+    }
+    .article-body :global(strong) {
+      color: #fff;
+    }
+    .article-body :global(code) {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.85em;
+      background: rgba(255,255,255,0.07);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+    }
+    .article-body :global(pre code) {
+      background: none;
+      padding: 0;
+      font-size: inherit;
+    }
+  </style>
+
+  <div class="article-hero">
+    <div class="article-hero-inner">
+      <a href="/" class="back-link">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M9 2L4 7L9 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        All articles
+      </a>
+      <h1 class="article-title">{title}</h1>
+      <p class="article-summary">{summary}</p>
+      <span class="affected-badge">{affectedSince}</span>
+    </div>
+  </div>
+
+  <div class="article-body">
+    <slot />
+  </div>
+</BaseLayout>

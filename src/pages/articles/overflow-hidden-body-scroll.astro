@@ -1,0 +1,260 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import IphoneMockup from '../../components/IphoneMockup.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import BrowserSupport from '../../components/BrowserSupport.astro';
+import ResourceList from '../../components/ResourceList.astro';
+
+const browserRows = [
+  { browser: 'Safari iOS', version: 'All', supported: false, notes: 'overflow:hidden on body is ignored by WebKit (bug #153852)' },
+  { browser: 'Chrome iOS', version: 'All', supported: false, notes: 'Uses same WebKit engine — same behaviour' },
+  { browser: 'Chrome Android', version: 'All', supported: true, notes: 'overflow:hidden on body works correctly' },
+  { browser: 'Firefox', version: 'All', supported: true, notes: 'overflow:hidden on body works correctly' },
+  { browser: 'Safari macOS', version: 'All', supported: true, notes: 'Only iOS is affected' },
+];
+
+const resources = [
+  {
+    title: 'WebKit Bug #153852',
+    url: 'https://bugs.webkit.org/show_bug.cgi?id=153852',
+    description: 'The original bug report open since 2015. overflow:hidden on body doesn\'t prevent scrolling.'
+  },
+  {
+    title: 'MDN: TouchEvent.preventDefault()',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/API/TouchEvent/preventDefault',
+    description: 'How to call preventDefault on touch events to block native scroll.'
+  },
+  {
+    title: 'CSS-Tricks: "Prevent Body Scroll"',
+    url: 'https://css-tricks.com/prevent-page-scrolling-when-a-modal-is-open/',
+    description: 'Comprehensive breakdown of the various techniques and their tradeoffs.'
+  },
+];
+---
+
+<ArticleLayout
+  title="overflow: hidden Doesn't Lock Body Scroll"
+  summary="Adding overflow: hidden to <body> prevents scroll in all browsers except iOS Safari, where background content remains scrollable beneath modals and drawers."
+  affectedSince="All iOS Safari versions (WebKit bug #153852)"
+  slug="overflow-hidden-body-scroll"
+>
+  <style>
+    .mockup-center { display: flex; justify-content: flex-start; margin: 2rem 0; }
+
+    /* Modal mockup */
+    .page-behind {
+      position: absolute;
+      inset: 0;
+      background: #111;
+      padding: 32px 10px 10px;
+    }
+    .page-line {
+      height: 10px;
+      background: #2a2a2a;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    .modal-sheet {
+      background: #1e1e1e;
+      border-radius: 18px 18px 0 0;
+      padding: 12px 12px 28px;
+      border-top: 1px solid #333;
+    }
+    .modal-handle {
+      width: 36px;
+      height: 4px;
+      background: #444;
+      border-radius: 2px;
+      margin: 0 auto 12px;
+    }
+    .modal-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .modal-item {
+      height: 8px;
+      background: #2a2a2a;
+      border-radius: 3px;
+      margin-bottom: 6px;
+    }
+    .swipe-arrow {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .swipe-arrow-body {
+      width: 2px;
+      height: 30px;
+      background: rgba(255,255,255,0.6);
+      border-radius: 1px;
+    }
+    .swipe-arrow-head {
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid rgba(255,255,255,0.6);
+    }
+    .swipe-label {
+      font-size: 7px;
+      color: rgba(255,255,255,0.6);
+      white-space: nowrap;
+    }
+    .callout {
+      background: rgba(255, 69, 58, 0.07);
+      border: 1px solid rgba(255, 69, 58, 0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .callout strong { color: #fff; }
+    .tip {
+      background: rgba(10,132,255,0.07);
+      border: 1px solid rgba(10,132,255,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .tip strong { color: var(--accent); }
+  </style>
+
+  <h2>The Problem</h2>
+
+  <p>
+    When building a modal, drawer, or bottom sheet, the standard approach is to add <code>overflow: hidden</code> to
+    the <code>&lt;body&gt;</code> while the overlay is open. This works in every browser <em>except</em> iOS Safari,
+    where the body remains freely scrollable underneath the overlay.
+  </p>
+
+  <div class="mockup-center">
+    <IphoneMockup label="Page scrolls behind modal overlay">
+      <div class="page-behind">
+        <div class="page-line"></div>
+        <div class="page-line" style="width:80%"></div>
+        <div class="page-line" style="width:90%"></div>
+        <div class="page-line" style="width:70%"></div>
+        <div class="page-line" style="width:85%"></div>
+        <div class="page-line" style="width:60%"></div>
+      </div>
+      <div class="overlay">
+        <div class="swipe-arrow">
+          <div class="swipe-arrow-body"></div>
+          <div class="swipe-arrow-head"></div>
+          <span class="swipe-label">scrolls!</span>
+        </div>
+        <div class="modal-sheet">
+          <div class="modal-handle"></div>
+          <div class="modal-title">Filter Options</div>
+          <div class="modal-item"></div>
+          <div class="modal-item" style="width:70%"></div>
+          <div class="modal-item" style="width:85%"></div>
+        </div>
+      </div>
+    </IphoneMockup>
+  </div>
+
+  <h2>Root Cause</h2>
+
+  <p>
+    WebKit on iOS manages page scroll through a native <strong>UIScrollView</strong> — a system-level component
+    that bypasses CSS entirely. The <code>overflow: hidden</code> property targets CSS rendering but has no effect
+    on the native scroll layer that UIScrollView controls.
+  </p>
+
+  <p>
+    This bug has been tracked as <strong>WebKit Bug #153852</strong> since 2015 and has never been fixed.
+    The iOS team considers native-feel scroll to be a feature, not a bug.
+  </p>
+
+  <div class="callout">
+    <strong>Why this matters:</strong> Users can two-finger-scroll (on iPad) or single-finger-swipe the background page
+    even when a full-screen modal is visually in front of it, creating a disorienting experience.
+  </div>
+
+  <h2>Fix 1 — touchmove preventDefault (Recommended)</h2>
+
+  <p>
+    Intercept touch events on the overlay and call <code>preventDefault()</code> on swipes that aren't inside the
+    scrollable modal content. This directly blocks the native scroll event.
+  </p>
+
+  <CodeBlock
+    lang="js"
+    filename="modal.js"
+    code={`const preventScroll = (e) => {
+  // Allow scroll inside the modal content itself
+  if (!e.target.closest('.modal-content')) {
+    e.preventDefault();
+  }
+};
+
+// When modal opens:
+document.addEventListener('touchmove', preventScroll, { passive: false });
+
+// When modal closes:
+document.removeEventListener('touchmove', preventScroll);`}
+  />
+
+  <div class="tip">
+    <strong>Important:</strong> <code set:html="&lbrace; passive: false &rbrace;" /> is required. Modern browsers register touchmove
+    listeners as passive by default for performance, which means <code>preventDefault()</code> is ignored.
+    You must explicitly opt out of passive mode to be able to cancel the event.
+  </div>
+
+  <h2>Fix 2 — position: fixed (Simpler, with tradeoff)</h2>
+
+  <p>
+    A simpler alternative that actually works on iOS: freeze the body in place using <code>position: fixed</code>.
+    The tradeoff is a scroll-position jump — you must save and restore the scroll position manually.
+  </p>
+
+  <CodeBlock
+    lang="js"
+    filename="modal-fixed.js"
+    code={`let scrollY = 0;
+
+function openModal() {
+  scrollY = window.scrollY;
+  document.body.style.cssText = \`
+    position: fixed;
+    top: -\${scrollY}px;
+    width: 100%;
+    overflow: hidden;
+  \`;
+}
+
+function closeModal() {
+  document.body.style.cssText = '';
+  window.scrollTo(0, scrollY);
+}`}
+  />
+
+  <h2>Browser Support</h2>
+
+  <BrowserSupport rows={browserRows} />
+
+  <h2>Further Reading</h2>
+
+  <ResourceList links={resources} />
+</ArticleLayout>

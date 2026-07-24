@@ -1,0 +1,142 @@
+---
+import { Code } from 'astro:components';
+
+interface Props {
+  code: string;
+  lang?: string;
+  filename?: string;
+}
+
+const { code, lang = 'css', filename } = Astro.props;
+const label = filename || lang.toUpperCase();
+const id = `cb-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<div class="code-block" id={id}>
+  <div class="code-header">
+    <span class="code-label">
+      <span class="lang-dot"></span>
+      {label}
+    </span>
+    <button class="copy-btn" data-target={id} aria-label="Copy code">
+      <svg class="copy-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <rect x="1" y="4" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M4 4V3a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1" stroke="currentColor" stroke-width="1.4"/>
+      </svg>
+      <svg class="check-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" style="display:none">
+        <path d="M2 7l4 4 6-6" stroke="#30d158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="copy-text">Copy</span>
+    </button>
+  </div>
+  <div class="code-content">
+    <Code code={code} lang={lang as any} theme="github-dark" />
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.copy-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const blockId = (btn as HTMLElement).dataset.target;
+      const block = document.getElementById(blockId!);
+      const pre = block?.querySelector('pre');
+      const text = pre?.textContent || '';
+
+      try {
+        await navigator.clipboard.writeText(text);
+        const copyIcon = btn.querySelector('.copy-icon') as HTMLElement;
+        const checkIcon = btn.querySelector('.check-icon') as HTMLElement;
+        const copyText = btn.querySelector('.copy-text') as HTMLElement;
+
+        if (copyIcon) copyIcon.style.display = 'none';
+        if (checkIcon) checkIcon.style.display = 'block';
+        if (copyText) copyText.textContent = 'Copied!';
+
+        setTimeout(() => {
+          if (copyIcon) copyIcon.style.display = 'block';
+          if (checkIcon) checkIcon.style.display = 'none';
+          if (copyText) copyText.textContent = 'Copy';
+        }, 2000);
+      } catch {
+        console.error('Clipboard write failed');
+      }
+    });
+  });
+</script>
+
+<style>
+  .code-block {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 1.25rem 0;
+    background: #0d0d0d;
+  }
+
+  .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    background: #161616;
+    border-bottom: 1px solid var(--border);
+    gap: 1rem;
+  }
+
+  .code-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .lang-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.72rem;
+    padding: 3px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+
+  .copy-btn:hover {
+    color: #fff;
+    border-color: #444;
+    background: #222;
+  }
+
+  .code-content {
+    overflow-x: auto;
+    padding: 0;
+  }
+
+  .code-content :global(pre) {
+    margin: 0 !important;
+    padding: 1.1rem 1.25rem !important;
+    background: transparent !important;
+    font-size: 0.82rem !important;
+    line-height: 1.65 !important;
+  }
+
+  .code-content :global(code) {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace !important;
+  }
+</style>

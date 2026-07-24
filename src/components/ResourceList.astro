@@ -1,0 +1,87 @@
+---
+interface ResourceLink {
+  title: string;
+  url: string;
+  description?: string;
+}
+
+interface Props {
+  links: ResourceLink[];
+}
+
+const { links } = Astro.props;
+---
+
+<ul class="resource-list">
+  {links.map((link) => (
+    <li class="resource-item">
+      <a href={link.url} target="_blank" rel="noopener noreferrer" class="resource-link">
+        <div class="resource-title">
+          {link.title}
+          <svg class="ext-icon" width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M5 2H2a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            <path d="M8 1h3m0 0v3m0-3L5.5 6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        {link.description && <div class="resource-desc">{link.description}</div>}
+      </a>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .resource-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .resource-item {
+    margin: 0;
+  }
+
+  .resource-link {
+    display: block;
+    padding: 0.75rem 1rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+
+  .resource-link:hover {
+    border-color: var(--accent);
+    background: rgba(10, 132, 255, 0.05);
+    text-decoration: none;
+  }
+
+  .resource-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--accent);
+  }
+
+  .resource-link:hover .resource-title {
+    color: var(--accent-hover);
+  }
+
+  .ext-icon {
+    flex-shrink: 0;
+    opacity: 0.6;
+    margin-left: auto;
+  }
+
+  .resource-desc {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-top: 0.2rem;
+    line-height: 1.4;
+  }
+</style>

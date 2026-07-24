@@ -1,0 +1,262 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import IphoneMockup from '../../components/IphoneMockup.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import BrowserSupport from '../../components/BrowserSupport.astro';
+import ResourceList from '../../components/ResourceList.astro';
+
+const browserRows = [
+  { browser: 'Safari iOS', version: 'All', supported: 'partial', notes: 'overscroll-behavior supported on iOS 16+; older: use touch event workaround' },
+  { browser: 'Safari iOS 16+', version: '16+', supported: true, notes: 'overscroll-behavior: none / contain fully supported' },
+  { browser: 'Chrome iOS', version: 'All', supported: 'partial', notes: 'Same WebKit engine as Safari — same support level' },
+  { browser: 'Chrome Android', version: '63+', supported: true, notes: 'Full overscroll-behavior support' },
+  { browser: 'Firefox', version: '59+', supported: true, notes: 'Full overscroll-behavior support' },
+];
+
+const resources = [
+  {
+    title: 'MDN: overscroll-behavior',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/overscroll-behavior',
+    description: 'Complete reference for overscroll-behavior: none, auto, and contain values.'
+  },
+  {
+    title: 'web.dev: "Take control of your scroll"',
+    url: 'https://developer.chrome.com/blog/overscroll-behavior',
+    description: 'Deep dive into overscroll-behavior including pull-to-refresh prevention and scroll chaining.'
+  },
+];
+---
+
+<ArticleLayout
+  title="Rubber-Band Scroll Leaking to the Page"
+  summary="When a scrollable element reaches its top or bottom, iOS's rubber-band effect can pull the entire page, causing unintended overscroll or revealing a white background behind the app."
+  affectedSince="All iOS versions"
+  slug="overscroll-rubber-band"
+>
+  <style>
+    .mockup-center { display: flex; justify-content: flex-start; margin: 2rem 0; }
+
+    .sheet-phone {
+      position: absolute;
+      inset: 0;
+      background: #f5f5f5;
+      overflow: hidden;
+    }
+    /* Page background peeking through at top */
+    .page-peek {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background: #fff;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 4px;
+    }
+    .page-peek-text {
+      font-size: 7px;
+      color: #999;
+    }
+    .sheet-panel {
+      position: absolute;
+      top: 30px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #1a1a1a;
+      border-radius: 14px 14px 0 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .sheet-handle {
+      width: 32px;
+      height: 4px;
+      background: #444;
+      border-radius: 2px;
+      margin: 8px auto 6px;
+      flex-shrink: 0;
+    }
+    .sheet-title {
+      font-size: 9px;
+      font-weight: 700;
+      color: #fff;
+      padding: 0 12px 6px;
+      border-bottom: 1px solid #2a2a2a;
+      flex-shrink: 0;
+    }
+    .sheet-list {
+      flex: 1;
+      overflow: hidden;
+      padding: 6px 0;
+    }
+    .sheet-item {
+      height: 16px;
+      margin: 5px 10px;
+      background: #2a2a2a;
+      border-radius: 4px;
+    }
+    .bleed-indicator {
+      position: absolute;
+      top: 24px;
+      left: 0;
+      right: 0;
+      height: 12px;
+      border-top: 2px dashed #ff453a;
+    }
+    .bleed-label {
+      position: absolute;
+      top: 10px;
+      left: 8px;
+      font-size: 6px;
+      font-weight: 700;
+      color: #ff453a;
+      white-space: nowrap;
+      background: rgba(0,0,0,0.5);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    .note {
+      background: rgba(10,132,255,0.07);
+      border: 1px solid rgba(10,132,255,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .note strong { color: var(--accent); }
+    .tip {
+      background: rgba(48,209,88,0.07);
+      border: 1px solid rgba(48,209,88,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .tip strong { color: #30d158; }
+  </style>
+
+  <h2>The Problem</h2>
+
+  <p>
+    iOS uses a physics-based "elastic" scroll model. When a user scrolls to the very top or bottom of a scrollable
+    container, momentum doesn't stop abruptly — the page stretches slightly and bounces back (rubber-band effect).
+    When this happens inside a modal or bottom sheet, the bounce can "escape" into the parent page, revealing
+    the background (often white) above or below your app shell.
+  </p>
+
+  <div class="mockup-center">
+    <IphoneMockup label="Page background revealed by overscroll bounce">
+      <div class="sheet-phone">
+        <div class="page-peek">
+          <span class="page-peek-text">page background</span>
+        </div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <div class="sheet-title">Product List</div>
+          <div class="sheet-list">
+            <div class="sheet-item"></div>
+            <div class="sheet-item" style="width:80%"></div>
+            <div class="sheet-item"></div>
+            <div class="sheet-item" style="width:70%"></div>
+            <div class="sheet-item"></div>
+          </div>
+        </div>
+        <div class="bleed-indicator"></div>
+        <span class="bleed-label">rubber-band exposed page</span>
+      </div>
+    </IphoneMockup>
+  </div>
+
+  <h2>Root Cause</h2>
+
+  <p>
+    iOS's native UIScrollView uses an elastic scrolling model — scrolling past boundaries stretches the content
+    and snaps back. This is called <em>scroll chaining</em>: when a child scroll container hits its limit,
+    any remaining scroll momentum passes to the parent container (the page itself).
+  </p>
+
+  <p>
+    This causes two common visual bugs: (1) the page background "peeks" above the app shell, and (2)
+    browser chrome or white space appears behind dark-themed apps.
+  </p>
+
+  <h2>Fix — overscroll-behavior (Modern)</h2>
+
+  <p>
+    The CSS property <code>overscroll-behavior</code> controls whether scroll chaining happens.
+    Setting it to <code>none</code> on the page body prevents any bounce on the page itself.
+    Using <code>contain</code> on inner containers allows them to still bounce, but keeps the effect contained.
+  </p>
+
+  <CodeBlock
+    lang="css"
+    filename="layout.css"
+    code={`/* Prevent the page from rubber-banding at all */
+html,
+body {
+  overscroll-behavior: none;
+}
+
+/* Let modal/sheet scroll still bounce within itself */
+.sheet-content,
+.modal-body {
+  overflow-y: auto;
+  overscroll-behavior-y: contain; /* bounce stays inside */
+  -webkit-overflow-scrolling: touch;
+}`}
+  />
+
+  <div class="note">
+    <strong>Support note:</strong> <code>overscroll-behavior</code> landed in iOS Safari 16 (September 2022).
+    For iOS 15 and below, you need the touchmove workaround below.
+  </div>
+
+  <h2>Fix — touchmove preventDefault (Legacy iOS)</h2>
+
+  <CodeBlock
+    lang="js"
+    filename="scroll-lock-legacy.js"
+    code={`// For iOS 15 and below: prevent page bounce when a modal is at scroll boundary
+const modal = document.querySelector('.modal-content');
+let lastY = 0;
+
+modal.addEventListener('touchstart', (e) => {
+  lastY = e.touches[0].clientY;
+}, { passive: true });
+
+modal.addEventListener('touchmove', (e) => {
+  const y = e.touches[0].clientY;
+  const scrollTop = modal.scrollTop;
+  const atTop = scrollTop <= 0 && y > lastY;
+  const atBottom = scrollTop + modal.clientHeight >= modal.scrollHeight && y < lastY;
+
+  if (atTop || atBottom) {
+    e.preventDefault(); // prevent chaining to page
+  }
+
+  lastY = y;
+}, { passive: false });`}
+  />
+
+  <div class="tip">
+    <strong>Tip:</strong> Set the page body background to match your app's dark background colour — even if bounce
+    occurs, the revealed area looks like your app rather than a jarring white gap.
+    <code set:html="html &lbrace; background: #0f0f0f; &rbrace;" />
+  </div>
+
+  <h2>Browser Support</h2>
+
+  <BrowserSupport rows={browserRows} />
+
+  <h2>Further Reading</h2>
+
+  <ResourceList links={resources} />
+</ArticleLayout>

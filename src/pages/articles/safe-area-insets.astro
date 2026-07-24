@@ -1,0 +1,270 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import IphoneMockup from '../../components/IphoneMockup.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import BrowserSupport from '../../components/BrowserSupport.astro';
+import ResourceList from '../../components/ResourceList.astro';
+
+const browserRows = [
+  { browser: 'Safari iOS 11+', version: '11+', supported: true, notes: 'env(safe-area-inset-*) fully supported' },
+  { browser: 'Safari iOS < 11', version: '< 11', supported: true, notes: 'No non-rectangular screens — safe area is 0, no issue' },
+  { browser: 'Chrome iOS', version: 'All', supported: true, notes: 'Same WebKit engine, same env() support' },
+  { browser: 'Chrome Android', version: '69+', supported: true, notes: 'env() supported; Android handles notches differently' },
+  { browser: 'Firefox', version: '65+', supported: true, notes: 'env(safe-area-inset-*) supported' },
+  { browser: 'Samsung Internet', version: '9+', supported: true, notes: 'Supported for Samsung devices with notches' },
+];
+
+const resources = [
+  {
+    title: 'WebKit Blog: "Designing Websites for iPhone X"',
+    url: 'https://webkit.org/blog/7929/designing-websites-for-iphone-x/',
+    description: 'The original WebKit blog post introducing safe area insets and viewport-fit=cover.'
+  },
+  {
+    title: 'MDN: env()',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/env',
+    description: 'Complete documentation for the env() CSS function and all supported environment variables.'
+  },
+  {
+    title: 'Apple Developer: Safe Area Layout Guide',
+    url: 'https://developer.apple.com/design/human-interface-guidelines/layout',
+    description: 'Apple\'s design guidelines for respecting safe areas in iOS applications.'
+  },
+];
+---
+
+<ArticleLayout
+  title="Safe Area Insets (Notch & Home Bar)"
+  summary="On iPhone X and later, content can be hidden behind the notch or Dynamic Island at the top and the home indicator at the bottom unless safe area insets are respected."
+  affectedSince="iOS 11+ (iPhone X and later)"
+  slug="safe-area-insets"
+>
+  <style>
+    .mockup-center { display: flex; justify-content: flex-start; margin: 2rem 0; }
+
+    .safe-phone {
+      position: absolute;
+      inset: 0;
+      background: #0d1117;
+    }
+    /* Content bleeding into unsafe zones */
+    .unsafe-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 44px;
+      background: var(--accent);
+      display: flex;
+      align-items: flex-start;
+      padding: 2px 10px 0;
+      font-size: 8px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .unsafe-header-text {
+      margin-top: 2px; /* behind the island */
+    }
+    .overlap-outline-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 42px;
+      border: 2px solid #ff453a;
+      pointer-events: none;
+    }
+    .unsafe-footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 22px;
+      background: #1e1e1e;
+      border-top: 1px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7px;
+      color: #666;
+    }
+    .overlap-outline-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 20px;
+      border: 2px solid #ff453a;
+      pointer-events: none;
+    }
+    .content-area {
+      position: absolute;
+      top: 44px;
+      left: 0;
+      right: 0;
+      bottom: 22px;
+      padding: 8px;
+    }
+    .content-line {
+      height: 9px;
+      background: #2a2a2a;
+      border-radius: 4px;
+      margin-bottom: 7px;
+    }
+    .danger-label {
+      position: absolute;
+      font-size: 6px;
+      font-weight: 700;
+      color: #ff453a;
+      white-space: nowrap;
+      background: rgba(0,0,0,0.8);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    .danger-label.top-label { top: 32px; right: 6px; }
+    .danger-label.bottom-label { bottom: 24px; right: 6px; }
+
+    .note {
+      background: rgba(10,132,255,0.07);
+      border: 1px solid rgba(10,132,255,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .note strong { color: var(--accent); }
+    .tip {
+      background: rgba(48,209,88,0.07);
+      border: 1px solid rgba(48,209,88,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .tip strong { color: #30d158; }
+  </style>
+
+  <h2>The Problem</h2>
+
+  <p>
+    When you set <code>viewport-fit=cover</code> to create an edge-to-edge experience, the browser renders your
+    content under the Dynamic Island, notch, and home indicator bar. Headers get hidden behind the pill;
+    bottom nav bars slide under the home indicator.
+  </p>
+
+  <div class="mockup-center">
+    <IphoneMockup label="Content overlapping Dynamic Island & home bar">
+      <div class="safe-phone">
+        <div class="unsafe-header">
+          <span class="unsafe-header-text">Navigation Header</span>
+        </div>
+        <div class="content-area">
+          <div class="content-line"></div>
+          <div class="content-line" style="width:80%"></div>
+          <div class="content-line" style="width:90%"></div>
+          <div class="content-line" style="width:65%"></div>
+          <div class="content-line" style="width:75%"></div>
+        </div>
+        <div class="unsafe-footer">Bottom Nav Bar</div>
+        <div class="overlap-outline-top"></div>
+        <div class="overlap-outline-bottom"></div>
+        <span class="danger-label top-label">hidden by island</span>
+        <span class="danger-label bottom-label">hidden by bar</span>
+      </div>
+    </IphoneMockup>
+  </div>
+
+  <h2>Root Cause</h2>
+
+  <p>
+    Starting with iPhone X (2017), Apple introduced non-rectangular screen areas — the notch, then the Dynamic Island.
+    When <code>viewport-fit=cover</code> is added to the viewport meta tag, the browser renders content
+    edge-to-edge to fill the rounded corners. But the iOS hardware UI (Dynamic Island, home indicator) sits on top of
+    your content and covers it.
+  </p>
+
+  <p>
+    iOS exposes the safe zones as CSS environment variables via <code>env()</code>, allowing you to pad
+    your content away from these hardware elements.
+  </p>
+
+  <div class="note">
+    <strong>Note:</strong> Without <code>viewport-fit=cover</code>, the browser adds letter-box padding and safe areas
+    are automatically respected — but you lose the edge-to-edge look. The env() fix is only needed when
+    you opt into cover mode.
+  </div>
+
+  <h2>Step 1 — Enable edge-to-edge</h2>
+
+  <CodeBlock
+    lang="html"
+    filename="index.html"
+    code={`<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, viewport-fit=cover"
+>`}
+  />
+
+  <h2>Step 2 — Pad with env() variables</h2>
+
+  <CodeBlock
+    lang="css"
+    filename="layout.css"
+    code={`/* Apply safe area padding to UI chrome elements */
+.app-header {
+  padding-top: env(safe-area-inset-top);
+}
+
+.app-footer,
+.bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Left/right for landscape mode (iPhone notch rotates) */
+.app-shell {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Combine with a minimum padding using max() */
+.bottom-nav {
+  padding-bottom: 12px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+/* Add to an existing padding using calc() */
+.sticky-footer {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}`}
+  />
+
+  <div class="tip">
+    <strong>Use max() for minimum padding:</strong> <code>max(20px, env(safe-area-inset-bottom))</code> ensures
+    at least 20px of padding on older devices where the safe-area value is 0, while correctly
+    applying the larger inset value on modern iPhones.
+  </div>
+
+  <h2>The four env() variables</h2>
+
+  <CodeBlock
+    lang="css"
+    filename="reference.css"
+    code={`/* Available environment variables */
+env(safe-area-inset-top)    /* Dynamic Island / status bar height */
+env(safe-area-inset-right)  /* Right edge (landscape notch side) */
+env(safe-area-inset-bottom) /* Home indicator height (~34px on iPhone) */
+env(safe-area-inset-left)   /* Left edge (landscape non-notch side) */`}
+  />
+
+  <h2>Browser Support</h2>
+
+  <BrowserSupport rows={browserRows} />
+
+  <h2>Further Reading</h2>
+
+  <ResourceList links={resources} />
+</ArticleLayout>

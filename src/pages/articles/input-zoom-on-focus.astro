@@ -1,0 +1,245 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import IphoneMockup from '../../components/IphoneMockup.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import BrowserSupport from '../../components/BrowserSupport.astro';
+import ResourceList from '../../components/ResourceList.astro';
+
+const browserRows = [
+  { browser: 'Safari iOS', version: 'All', supported: 'partial', notes: 'Zooms on focus if font-size < 16px; fix: set font-size to 16px' },
+  { browser: 'Chrome iOS', version: 'All', supported: 'partial', notes: 'Same WebKit engine, same behaviour' },
+  { browser: 'Chrome Android', version: 'All', supported: true, notes: 'No auto-zoom quirk' },
+  { browser: 'Firefox', version: 'All', supported: true, notes: 'No auto-zoom quirk' },
+];
+
+const resources = [
+  {
+    title: 'Stack Overflow: Disable iOS auto-zoom on input focus',
+    url: 'https://stackoverflow.com/questions/2989263/disable-auto-zoom-in-input-text-tag-safari-on-iphone',
+    description: 'The canonical thread with thousands of upvotes — confirmed working solutions.'
+  },
+  {
+    title: 'WebKit Source: RenderThemeIOS font-size threshold',
+    url: 'https://github.com/WebKit/WebKit/blob/main/Source/WebCore/rendering/RenderThemeIOS.mm',
+    description: 'The WebKit source where the 16px threshold is defined for input scaling.'
+  },
+  {
+    title: 'MDN: font-size',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/font-size',
+    description: 'Complete reference for the font-size property.'
+  },
+];
+---
+
+<ArticleLayout
+  title="Auto-Zoom on Input Focus"
+  summary="iOS Safari automatically zooms the viewport when a form input is focused if its font-size is less than 16px."
+  affectedSince="All iOS Safari versions"
+  slug="input-zoom-on-focus"
+>
+  <style>
+    .mockup-center { display: flex; justify-content: flex-start; margin: 2rem 0; }
+
+    /* Input zoom mockup */
+    .phone-normal {
+      position: absolute;
+      inset: 0;
+      background: #111;
+      padding: 32px 10px 10px;
+    }
+    .phone-input-bar {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 8px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      margin-bottom: 10px;
+    }
+    .phone-input-cursor {
+      width: 1px;
+      height: 14px;
+      background: var(--accent);
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    .phone-input-placeholder {
+      font-size: 8px;
+      color: #666;
+    }
+    .zoom-overlay {
+      position: absolute;
+      inset: 0;
+      background: #111;
+      padding: 32px 4px 4px;
+      overflow: hidden;
+    }
+    .zoom-input-large {
+      background: #2a2a2a;
+      border: 2px solid var(--accent);
+      border-radius: 10px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      margin-bottom: 12px;
+    }
+    .zoom-input-text {
+      font-size: 11px;
+      color: #ccc;
+    }
+    .zoom-content-clipped {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      transform: scale(1.4);
+      transform-origin: top left;
+    }
+    .zoom-line {
+      height: 9px;
+      background: #2a2a2a;
+      border-radius: 3px;
+    }
+    .zoom-badge {
+      position: absolute;
+      top: 38px;
+      right: 4px;
+      background: #ff453a;
+      color: #fff;
+      font-size: 6px;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+    .note {
+      background: rgba(255,214,10,0.07);
+      border: 1px solid rgba(255,214,10,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .note strong { color: #ffd60a; }
+    .warning {
+      background: rgba(255,69,58,0.07);
+      border: 1px solid rgba(255,69,58,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .warning strong { color: #ff453a; }
+  </style>
+
+  <h2>The Problem</h2>
+
+  <p>
+    Whenever a user taps an input, select, or textarea whose computed <code>font-size</code> is below <strong>16px</strong>,
+    iOS Safari zooms the entire viewport in. The page stays zoomed until the user manually pinches to zoom back out —
+    a jarring experience that breaks custom layouts.
+  </p>
+
+  <div class="mockup-center">
+    <IphoneMockup label="Page zooms on input tap (font-size < 16px)">
+      <div class="zoom-overlay">
+        <div class="zoom-input-large">
+          <span class="zoom-input-text">Search...</span>
+        </div>
+        <div class="zoom-content-clipped">
+          <div class="zoom-line" style="width:90%"></div>
+          <div class="zoom-line" style="width:75%"></div>
+          <div class="zoom-line" style="width:85%"></div>
+          <div class="zoom-line" style="width:60%"></div>
+        </div>
+        <div class="zoom-badge">ZOOMED</div>
+      </div>
+    </IphoneMockup>
+  </div>
+
+  <h2>Root Cause</h2>
+
+  <p>
+    iOS Safari applies automatic zoom when the computed <code>font-size</code> of the focused input is less than
+    <strong>16px</strong>. This threshold is defined in WebKit's <code>RenderThemeIOS.mm</code> source file.
+    The intent is to make small text easier to read and type in, but the result breaks designs that use compact inputs.
+  </p>
+
+  <p>
+    Importantly, it's the <em>computed</em> font-size that matters — even if a parent element sets a size,
+    if the input's effective rendered size is under 16px, the zoom triggers.
+  </p>
+
+  <h2>Fix 1 — Set font-size to 16px (Recommended)</h2>
+
+  <CodeBlock
+    lang="css"
+    filename="forms.css"
+    code={`/* The simplest, most accessible fix */
+input,
+select,
+textarea {
+  font-size: 16px; /* Meets the iOS Safari threshold */
+}
+
+/* Or be explicit with rem */
+input,
+select,
+textarea {
+  font-size: 1rem; /* Assumes 16px root — confirm your base font-size */
+}`}
+  />
+
+  <h2>Fix 2 — Scale Down with transform (Design-preserving)</h2>
+
+  <p>
+    If your design requires visually smaller inputs but you can't change the font-size appearance, set the
+    font-size to 16px and use <code>transform: scale()</code> to shrink it visually. The browser sees 16px
+    (no zoom triggered), but the user sees a smaller element.
+  </p>
+
+  <CodeBlock
+    lang="css"
+    filename="forms-scale.css"
+    code={`input.compact {
+  font-size: 16px;                /* iOS sees 16px → no zoom */
+  transform: scale(0.875);        /* Visually renders ~14px */
+  transform-origin: left center;
+  /* Compensate for negative space from scaling */
+  margin-right: -12.5%;
+}`}
+  />
+
+  <h2>Fix 3 — viewport maximum-scale (Not recommended)</h2>
+
+  <CodeBlock
+    lang="html"
+    filename="index.html"
+    code={`<!-- This prevents auto-zoom but also disables ALL user zoom — bad for accessibility -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">`}
+  />
+
+  <div class="warning">
+    <strong>Accessibility warning:</strong> Setting <code>maximum-scale=1</code> prevents zoom for users who
+    rely on browser zoom for readability. This fails WCAG 1.4.4 (Resize Text). Only use this if you have no
+    other option and understand the tradeoff.
+  </div>
+
+  <div class="note">
+    <strong>Tip:</strong> Option 1 (font-size: 16px) is the right default. Most design systems already use
+    16px for body text, so inputs matching that size don't feel out of place. If you're fighting a smaller
+    custom design system, use Option 2.
+  </div>
+
+  <h2>Browser Support</h2>
+
+  <BrowserSupport rows={browserRows} />
+
+  <h2>Further Reading</h2>
+
+  <ResourceList links={resources} />
+</ArticleLayout>

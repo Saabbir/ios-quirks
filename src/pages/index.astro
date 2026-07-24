@@ -1,0 +1,302 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const articles = [
+  {
+    slug: '100vh-dynamic-url-bar',
+    emoji: '📐',
+    title: '100vh and Safari\'s Dynamic URL Bar',
+    description: 'Elements sized to 100vh overflow the visible screen when Safari\'s URL bar is visible.',
+  },
+  {
+    slug: 'overflow-hidden-body-scroll',
+    emoji: '🔒',
+    title: 'overflow: hidden Doesn\'t Lock Body Scroll',
+    description: 'Background content remains scrollable beneath modals and drawers on iOS Safari.',
+  },
+  {
+    slug: 'input-zoom-on-focus',
+    emoji: '🔍',
+    title: 'Auto-Zoom on Input Focus',
+    description: 'iOS Safari automatically zooms in when a form input with font-size < 16px is focused.',
+  },
+  {
+    slug: 'position-fixed-virtual-keyboard',
+    emoji: '⌨️',
+    title: 'position: fixed Breaks with Virtual Keyboard',
+    description: 'Fixed elements shift up with the keyboard instead of anchoring to the visible bottom.',
+  },
+  {
+    slug: 'tap-highlight-color',
+    emoji: '✨',
+    title: 'Unwanted Tap Highlight Flash',
+    description: 'Tapping interactive elements shows a translucent grey flash that breaks custom designs.',
+  },
+  {
+    slug: 'video-autoplay',
+    emoji: '▶️',
+    title: 'Video Autoplay Restrictions',
+    description: 'iOS Safari blocks video autoplay unless the video is muted and marked as inline.',
+  },
+  {
+    slug: 'safe-area-insets',
+    emoji: '📱',
+    title: 'Safe Area Insets (Notch & Home Bar)',
+    description: 'Content can be hidden behind the Dynamic Island or home indicator on modern iPhones.',
+  },
+  {
+    slug: 'overscroll-rubber-band',
+    emoji: '🏀',
+    title: 'Rubber-Band Scroll Leaking to the Page',
+    description: 'iOS\'s rubber-band overscroll effect can pull the entire page from inside a scroll container.',
+  },
+  {
+    slug: 'momentum-scrolling',
+    emoji: '💨',
+    title: 'Sluggish Scroll in Overflow Containers',
+    description: 'Scrollable divs feel choppy on older iOS because momentum scrolling isn\'t applied by default.',
+  },
+  {
+    slug: 'date-input-quirks',
+    emoji: '📅',
+    title: '<input type="date"> Inconsistencies',
+    description: 'Date inputs render as an unstyleable native iOS drum-picker wheel on Safari.',
+  },
+];
+---
+
+<BaseLayout title="iOS Safari Quirks — Developer Reference">
+  <style>
+    .hero {
+      padding: 5rem 1.5rem 4rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(10,132,255,0.08) 0%, transparent 70%);
+    }
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.25rem;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .hero-eyebrow-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .hero-title {
+      font-size: clamp(2.2rem, 6vw, 3.8rem);
+      letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.1;
+    }
+    .hero-title span {
+      background: linear-gradient(135deg, var(--accent) 0%, #64b5ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-subtitle {
+      font-size: 1.1rem;
+      color: #999;
+      max-width: 520px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.65;
+    }
+    .hero-stats {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    .hero-stat {
+      text-align: center;
+    }
+    .hero-stat-num {
+      display: block;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .hero-stat-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .hero-stat-divider {
+      width: 1px;
+      height: 30px;
+      background: var(--border);
+    }
+    .articles-section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin: 0;
+    }
+    .section-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .articles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+    .article-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.4rem;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .article-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(10,132,255,0.04) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .article-card:hover {
+      border-color: rgba(10, 132, 255, 0.4);
+      transform: translateY(-1px);
+      text-decoration: none;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+    .article-card:hover::before {
+      opacity: 1;
+    }
+    .card-emoji {
+      font-size: 1.75rem;
+      line-height: 1;
+      margin-bottom: 0.2rem;
+    }
+    .card-title {
+      font-size: 0.97rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+      margin: 0;
+    }
+    .card-desc {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.5;
+      flex: 1;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 0.25rem;
+    }
+    .card-badge {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: rgba(10, 132, 255, 0.12);
+      border: 1px solid rgba(10, 132, 255, 0.2);
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .card-arrow {
+      color: var(--muted);
+      transition: transform 0.15s, color 0.15s;
+    }
+    .article-card:hover .card-arrow {
+      transform: translateX(3px);
+      color: var(--accent);
+    }
+  </style>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="hero-eyebrow-dot"></span>
+      Developer Reference
+    </div>
+    <h1 class="hero-title">
+      <span>iOS Safari</span> Quirks
+    </h1>
+    <p class="hero-subtitle">
+      Common iOS Safari bugs explained with visuals and copy-paste fixes. Stop searching Stack Overflow — it's all here.
+    </p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <span class="hero-stat-num">10</span>
+        <span class="hero-stat-label">Articles</span>
+      </div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">CSS</span>
+        <span class="hero-stat-label">Focus</span>
+      </div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">∞</span>
+        <span class="hero-stat-label">Hours saved</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="articles-section">
+    <div class="section-header">
+      <h2 class="section-title">All articles</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="articles-grid">
+      {articles.map((article) => (
+        <a href={`/articles/${article.slug}`} class="article-card">
+          <div class="card-emoji">{article.emoji}</div>
+          <h3 class="card-title">{article.title}</h3>
+          <p class="card-desc">{article.description}</p>
+          <div class="card-footer">
+            <span class="card-badge">iOS Safari</span>
+            <svg class="card-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </a>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

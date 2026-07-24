@@ -1,0 +1,242 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import IphoneMockup from '../../components/IphoneMockup.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import BrowserSupport from '../../components/BrowserSupport.astro';
+import ResourceList from '../../components/ResourceList.astro';
+
+const browserRows = [
+  { browser: 'Safari iOS 13+', version: '13+', supported: true, notes: 'Momentum scroll applied automatically — no CSS needed' },
+  { browser: 'Safari iOS 12 and below', version: '≤ 12', supported: 'partial', notes: 'Requires -webkit-overflow-scrolling: touch on overflow containers' },
+  { browser: 'Chrome iOS', version: 'All', supported: true, notes: 'Same WebKit engine — same native scroll behaviour' },
+  { browser: 'Chrome Android', version: 'All', supported: true, notes: 'Native scroll used for all overflow containers' },
+  { browser: 'Firefox', version: 'All', supported: true, notes: 'Native scroll everywhere; property is not recognised' },
+];
+
+const resources = [
+  {
+    title: 'MDN: -webkit-overflow-scrolling',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/-webkit-overflow-scrolling',
+    description: 'Documentation noting this non-standard property is deprecated in modern iOS — now a no-op.'
+  },
+  {
+    title: 'Can I Use: -webkit-overflow-scrolling',
+    url: 'https://caniuse.com/css-overflow-scrolling',
+    description: 'Browser compatibility table showing which versions required the property.'
+  },
+];
+---
+
+<ArticleLayout
+  title="Sluggish Scroll in Overflow Containers"
+  summary="Scrollable div elements feel sluggish on older iOS devices because native momentum (inertia) scroll is not applied by default."
+  affectedSince="Pre-iOS 13 (legacy; iOS 13+ applies momentum automatically)"
+  slug="momentum-scrolling"
+>
+  <style>
+    .mockup-center { display: flex; justify-content: flex-start; margin: 2rem 0; }
+
+    .scroll-phone {
+      position: absolute;
+      inset: 0;
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      padding-top: 32px;
+    }
+    .scroll-box {
+      margin: 10px;
+      border: 1px solid #333;
+      border-radius: 10px;
+      overflow: hidden;
+      flex: 1;
+    }
+    .scroll-box-header {
+      background: #1c1c1e;
+      padding: 6px 10px;
+      font-size: 8px;
+      font-weight: 700;
+      color: #fff;
+      border-bottom: 1px solid #333;
+    }
+    .scroll-items {
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .scroll-item {
+      height: 22px;
+      background: #2a2a2a;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      gap: 6px;
+    }
+    .scroll-item-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .scroll-item-line {
+      height: 5px;
+      background: #3a3a3a;
+      border-radius: 3px;
+      flex: 1;
+    }
+    /* Swipe gesture */
+    .swipe-gesture {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .swipe-line {
+      width: 2px;
+      height: 28px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 1px;
+    }
+    .swipe-head {
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-bottom: 8px solid rgba(255,255,255,0.3);
+    }
+    .choppy-label {
+      position: absolute;
+      top: 34px;
+      right: 4px;
+      font-size: 6px;
+      font-weight: 700;
+      color: #ffd60a;
+      background: rgba(0,0,0,0.8);
+      padding: 2px 5px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+
+    .note {
+      background: rgba(10,132,255,0.07);
+      border: 1px solid rgba(10,132,255,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .note strong { color: var(--accent); }
+    .tip {
+      background: rgba(48,209,88,0.07);
+      border: 1px solid rgba(48,209,88,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .tip strong { color: #30d158; }
+  </style>
+
+  <h2>The Problem</h2>
+
+  <p>
+    On older iOS devices (iOS 12 and below), scrolling inside a <code>div</code> with <code>overflow: auto</code> or
+    <code>overflow: scroll</code> feels sluggish and unresponsive — it stops immediately when you lift your finger,
+    like dragging a heavy object. The smooth deceleration ("momentum" or "inertia" scroll) that makes iOS feel
+    fast is absent.
+  </p>
+
+  <div class="mockup-center">
+    <IphoneMockup label="Choppy scroll without momentum (pre-iOS 13)">
+      <div class="scroll-phone">
+        <div class="scroll-box">
+          <div class="scroll-box-header">Product List</div>
+          <div class="scroll-items">
+            {Array.from({length: 6}).map((_, i) => (
+              <div class="scroll-item">
+                <div class="scroll-item-dot"></div>
+                <div class="scroll-item-line" style={`width:${60 + (i % 3) * 15}%`}></div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div class="swipe-gesture">
+          <div class="swipe-head"></div>
+          <div class="swipe-line"></div>
+        </div>
+        <span class="choppy-label">no momentum!</span>
+      </div>
+    </IphoneMockup>
+  </div>
+
+  <h2>Root Cause</h2>
+
+  <p>
+    iOS uses a native <strong>UIScrollView</strong> for momentum scroll — the physics engine that decelerates
+    scroll after a flick gesture. On pre-iOS 13, this native component was only activated for the main document
+    scroll (<code>&lt;body&gt;</code>). Overflow containers in <code>div</code> elements used a synthetic,
+    CSS-only scroll implementation that lacked inertia entirely.
+  </p>
+
+  <p>
+    The <code>-webkit-overflow-scrolling: touch</code> property was the opt-in to use native UIScrollView
+    for a specific overflow container. iOS 13 made this the default for all overflow containers,
+    making the property a no-op in modern iOS (but still harmless to include).
+  </p>
+
+  <h2>The Fix</h2>
+
+  <CodeBlock
+    lang="css"
+    filename="scroll.css"
+    code={`/* Enable momentum scroll on overflow containers */
+.scrollable-container {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* legacy iOS 12: enables native UIScrollView */
+}
+
+/* Common use cases */
+.sidebar,
+.product-list,
+.chat-messages,
+.modal-body,
+.drawer-content {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* On iOS 13+ this property is ignored — it's already the default.
+   On iOS 12 and below, without it, scroll feels like dragging. */`}
+  />
+
+  <div class="tip">
+    <strong>Safe to include everywhere:</strong> Adding <code>-webkit-overflow-scrolling: touch</code> is harmless
+    on modern iOS (13+) — the property is simply ignored since native scroll is already the default. Include it
+    for broad compatibility without any downside.
+  </div>
+
+  <div class="note">
+    <strong>Known side effect (iOS 12 and below):</strong> On older iOS, <code>-webkit-overflow-scrolling: touch</code>
+    can cause <code>position: sticky</code> elements inside the container to stop working. If you need both sticky
+    positioning and momentum scroll on legacy iOS, you'll need a JavaScript workaround.
+  </div>
+
+  <h2>Browser Support</h2>
+
+  <BrowserSupport rows={browserRows} />
+
+  <h2>Further Reading</h2>
+
+  <ResourceList links={resources} />
+</ArticleLayout>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#0A84FF"/>
+  <!-- iPhone silhouette -->
+  <rect x="10" y="4" width="12" height="24" rx="3" fill="white" opacity="0.15"/>
+  <rect x="11" y="7" width="10" height="16" rx="1.5" fill="white" opacity="0.9"/>
+  <!-- Dynamic island -->
+  <rect x="14" y="5.5" width="4" height="1.5" rx="0.75" fill="#0A84FF" opacity="0.8"/>
+  <!-- Home indicator -->
+  <rect x="14.5" y="24.5" width="3" height="1" rx="0.5" fill="white" opacity="0.5"/>
+  <!-- Bug/quirk indicator - small exclamation -->
+  <text x="16" y="18" font-family="system-ui, sans-serif" font-size="8" font-weight="800" fill="#ff453a" text-anchor="middle">!</text>
+</svg>

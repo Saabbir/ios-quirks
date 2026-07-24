@@ -1,0 +1,227 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import IphoneMockup from '../../components/IphoneMockup.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import BrowserSupport from '../../components/BrowserSupport.astro';
+import ResourceList from '../../components/ResourceList.astro';
+
+const browserRows = [
+  { browser: 'Safari iOS', version: 'All', supported: 'partial', notes: '-webkit-tap-highlight-color: transparent removes the flash' },
+  { browser: 'Chrome iOS', version: 'All', supported: 'partial', notes: 'Same WebKit engine — same behaviour and fix' },
+  { browser: 'Chrome Android', version: 'All', supported: 'partial', notes: 'Has its own tap ripple — controlled separately' },
+  { browser: 'Firefox', version: 'All', supported: true, notes: 'No tap highlight by default' },
+  { browser: 'Safari macOS', version: 'All', supported: true, notes: 'No tap highlight (mouse-driven)' },
+];
+
+const resources = [
+  {
+    title: 'MDN: -webkit-tap-highlight-color',
+    url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/-webkit-tap-highlight-color',
+    description: 'Reference page for the non-standard CSS property that controls the tap highlight.'
+  },
+  {
+    title: 'CSS-Tricks: iOS tap highlight color',
+    url: 'https://css-tricks.com/snippets/css/tap-highlight-color/',
+    description: 'Quick snippet and explanation for removing the default iOS tap highlight.'
+  },
+];
+---
+
+<ArticleLayout
+  title="Unwanted Tap Highlight Flash"
+  summary="Tapping interactive elements on iOS shows a translucent grey highlight flash, which looks broken on custom-styled buttons and links."
+  affectedSince="All iOS Safari versions"
+  slug="tap-highlight-color"
+>
+  <style>
+    .mockup-center { display: flex; justify-content: flex-start; margin: 2rem 0; }
+
+    .phone-screen {
+      position: absolute;
+      inset: 0;
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 32px 16px 16px;
+    }
+    .demo-button {
+      width: 100%;
+      height: 36px;
+      background: linear-gradient(135deg, #0A84FF, #5ac8fa);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .tap-highlight-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+    }
+    .demo-button-plain {
+      width: 100%;
+      height: 36px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #ccc;
+      position: relative;
+      overflow: hidden;
+    }
+    .highlight-badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #ff453a;
+      color: #fff;
+      font-size: 6px;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+    .demo-link {
+      font-size: 10px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      position: relative;
+    }
+    .link-highlight {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 4px;
+    }
+
+    .tip {
+      background: rgba(48,209,88,0.07);
+      border: 1px solid rgba(48,209,88,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.875rem;
+      color: #ccc;
+      margin: 1rem 0;
+      line-height: 1.6;
+    }
+    .tip strong { color: #30d158; }
+  </style>
+
+  <h2>The Problem</h2>
+
+  <p>
+    On iOS Safari, every tappable element — buttons, links, anything with a click handler — gets a brief translucent
+    grey highlight when tapped. On standard blue links it's mostly unnoticeable, but on custom-styled buttons
+    it looks like a dark flash or broken opacity animation.
+  </p>
+
+  <div class="mockup-center">
+    <IphoneMockup label="Default grey flash on tap">
+      <div class="phone-screen">
+        <div class="demo-button">
+          ADD TO CART
+          <div class="tap-highlight-overlay"></div>
+          <div class="highlight-badge">TAP FLASH</div>
+        </div>
+        <div class="demo-button-plain">
+          Secondary Action
+          <div class="tap-highlight-overlay" style="background:rgba(0,0,0,0.2)"></div>
+        </div>
+        <div class="demo-link">
+          View details
+          <div class="link-highlight"></div>
+        </div>
+      </div>
+    </IphoneMockup>
+  </div>
+
+  <h2>Root Cause</h2>
+
+  <p>
+    WebKit applies a default <code>-webkit-tap-highlight-color</code> to all clickable elements via its User Agent stylesheet.
+    The default value is a semi-transparent grey (<code>rgba(0,0,0,0.18)</code> approximately), which appears
+    as a dark flash over the element on tap.
+  </p>
+
+  <p>
+    This is an intentional iOS UI convention — it provides visual feedback that a tap registered. But it ignores any
+    custom <code>:active</code> or <code>:focus</code> styles you've set, creating a double-feedback problem with
+    custom-designed components.
+  </p>
+
+  <h2>Fix — Remove the highlight, add your own :active</h2>
+
+  <CodeBlock
+    lang="css"
+    filename="global.css"
+    code={`/* Step 1: Remove the default tap highlight globally */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Or target only interactive elements */
+button,
+a,
+[role="button"],
+[tabindex] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Step 2: Replace with your own :active feedback */
+button:active {
+  opacity: 0.75;
+  transform: scale(0.98);
+  transition: transform 0.1s, opacity 0.1s;
+}
+
+a:active {
+  opacity: 0.7;
+}`}
+  />
+
+  <div class="tip">
+    <strong>Accessibility reminder:</strong> Always replace the tap highlight with <em>some</em> form of interactive
+    feedback — <code>:active</code> opacity, background colour shift, or scale. Removing highlight with no replacement
+    makes buttons feel unresponsive.
+  </div>
+
+  <h2>Custom Highlight Colour</h2>
+
+  <p>
+    Instead of removing it entirely, you can set a custom colour — your brand's accent colour at low opacity
+    makes tap feedback feel intentional rather than broken.
+  </p>
+
+  <CodeBlock
+    lang="css"
+    filename="brand.css"
+    code={`/* Brand-coloured tap feedback instead of grey */
+button,
+a {
+  -webkit-tap-highlight-color: rgba(10, 132, 255, 0.15);
+}`}
+  />
+
+  <h2>Browser Support</h2>
+
+  <BrowserSupport rows={browserRows} />
+
+  <h2>Further Reading</h2>
+
+  <ResourceList links={resources} />
+</ArticleLayout>
