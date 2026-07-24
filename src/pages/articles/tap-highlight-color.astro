@@ -30,7 +30,7 @@ const resources = [
 <ArticleLayout
   title="Unwanted Tap Highlight Flash"
   summary="Tapping interactive elements on iOS shows a translucent grey highlight flash, which looks broken on custom-styled buttons and links."
-  affectedSince="All iOS Safari versions"
+  affectedSince="All iOS versions (Safari, Chrome, Firefox)"
   slug="tap-highlight-color"
 >
   <style>
@@ -125,7 +125,7 @@ const resources = [
   <h2>The Problem</h2>
 
   <p>
-    On iOS Safari, every tappable element — buttons, links, anything with a click handler — gets a brief translucent
+    On iOS, every tappable element — buttons, links, anything with a click handler — gets a brief translucent
     grey highlight when tapped. On standard blue links it's mostly unnoticeable, but on custom-styled buttons
     it looks like a dark flash or broken opacity animation.
   </p>

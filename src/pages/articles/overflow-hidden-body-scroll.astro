@@ -34,8 +34,8 @@ const resources = [
 
 <ArticleLayout
   title="overflow: hidden Doesn't Lock Body Scroll"
-  summary="Adding overflow: hidden to <body> prevents scroll in all browsers except iOS Safari, where background content remains scrollable beneath modals and drawers."
-  affectedSince="All iOS Safari versions (WebKit bug #153852)"
+  summary="Adding overflow: hidden to <body> prevents scroll in every browser except iOS, where background content remains scrollable beneath modals and drawers."
+  affectedSince="All iOS versions — WebKit bug #153852 (Safari, Chrome, Firefox)"
   slug="overflow-hidden-body-scroll"
 >
   <style>
@@ -143,8 +143,8 @@ const resources = [
 
   <p>
     When building a modal, drawer, or bottom sheet, the standard approach is to add <code>overflow: hidden</code> to
-    the <code>&lt;body&gt;</code> while the overlay is open. This works in every browser <em>except</em> iOS Safari,
-    where the body remains freely scrollable underneath the overlay.
+    the <code>&lt;body&gt;</code> while the overlay is open. This works in every browser <em>except iOS</em> —
+    where the body remains freely scrollable underneath the overlay regardless of which browser you use.
   </p>
 
   <div class="mockup-center">

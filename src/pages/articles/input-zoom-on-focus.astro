@@ -33,8 +33,8 @@ const resources = [
 
 <ArticleLayout
   title="Auto-Zoom on Input Focus"
-  summary="iOS Safari automatically zooms the viewport when a form input is focused if its font-size is less than 16px."
-  affectedSince="All iOS Safari versions"
+  summary="iOS automatically zooms the viewport when a form input is focused if its font-size is less than 16px — affects all iOS browsers."
+  affectedSince="All iOS versions (Safari, Chrome, Firefox)"
   slug="input-zoom-on-focus"
 >
   <style>
@@ -140,7 +140,7 @@ const resources = [
 
   <p>
     Whenever a user taps an input, select, or textarea whose computed <code>font-size</code> is below <strong>16px</strong>,
-    iOS Safari zooms the entire viewport in. The page stays zoomed until the user manually pinches to zoom back out —
+    iOS zooms the entire viewport in. The page stays zoomed until the user manually pinches to zoom back out —
     a jarring experience that breaks custom layouts.
   </p>
 
@@ -164,7 +164,7 @@ const resources = [
   <h2>Root Cause</h2>
 
   <p>
-    iOS Safari applies automatic zoom when the computed <code>font-size</code> of the focused input is less than
+    iOS applies automatic zoom when the computed <code>font-size</code> of the focused input is less than
     <strong>16px</strong>. This threshold is defined in WebKit's <code>RenderThemeIOS.mm</code> source file.
     The intent is to make small text easier to read and type in, but the result breaks designs that use compact inputs.
   </p>
@@ -183,7 +183,7 @@ const resources = [
 input,
 select,
 textarea {
-  font-size: 16px; /* Meets the iOS Safari threshold */
+  font-size: 16px; /* Meets the iOS threshold */
 }
 
 /* Or be explicit with rem */

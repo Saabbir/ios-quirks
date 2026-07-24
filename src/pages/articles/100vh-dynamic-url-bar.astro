@@ -37,9 +37,9 @@ const resources = [
 ---
 
 <ArticleLayout
-  title="100vh and Safari's Dynamic URL Bar"
-  summary="Elements sized to 100vh overflow the visible screen when Safari's URL bar is visible, hiding content at the bottom."
-  affectedSince="All iOS Safari versions · dvh fix available since iOS 15.4"
+  title="100vh and the Dynamic URL Bar"
+  summary="Elements sized to 100vh overflow the visible screen when the browser's URL bar is visible on page load, hiding content at the bottom."
+  affectedSince="All iOS versions (Safari, Chrome, Firefox) · dvh fix since iOS 15.4"
   slug="100vh-dynamic-url-bar"
 >
   <style>
@@ -169,7 +169,7 @@ const resources = [
   <h2>The Problem</h2>
 
   <p>
-    On iOS Safari, the URL bar is dynamic — it slides away as you scroll down, and reappears when you scroll up.
+    On iOS, the browser URL bar is dynamic — it slides away as you scroll down, and reappears when you scroll up.
     This is great for UX, but it creates a trap: <code>100vh</code> is computed against the <strong>large viewport height</strong>
     (URL bar hidden), not the <strong>actual visible area</strong> when the page first loads.
   </p>
@@ -227,7 +227,7 @@ const resources = [
   <h2>Root Cause</h2>
 
   <p>
-    On iOS Safari, <code>100vh</code> equals the <strong>large viewport height</strong> — the full screen height
+    On iOS browsers, <code>100vh</code> equals the <strong>large viewport height</strong> — the full screen height
     assuming the URL bar is retracted. When a user first loads the page, the URL bar is visible and occupies
     roughly 60px at the bottom of the visible area. Elements sitting at the bottom of a <code>100vh</code> container
     are scrolled out of view behind the URL bar.

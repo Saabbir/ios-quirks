@@ -6,7 +6,7 @@ interface Props {
   description?: string;
 }
 
-const { title, description = 'A practical reference for web developers documenting common iOS Safari bugs and fixes.' } = Astro.props;
+const { title, description = 'A practical reference for web developers documenting common iOS browser quirks and fixes — Safari, Chrome, and every browser on iOS.' } = Astro.props;
 ---
 
 <!doctype html>
@@ -89,7 +89,7 @@ const { title, description = 'A practical reference for web developers documenti
               <path d="M2 3h10M2 7h7M2 11h5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
             </svg>
           </span>
-          iOS Safari Quirks
+          iOS Quirks
         </a>
         <span class="nav-badge">10 articles</span>
       </div>
@@ -98,7 +98,7 @@ const { title, description = 'A practical reference for web developers documenti
     <slot />
 
     <footer class="site-footer">
-      Built with <a href="https://astro.build" target="_blank" rel="noopener">Astro</a> &amp; Tailwind CSS &mdash; A developer reference for iOS Safari web quirks.
+      Built with <a href="https://astro.build" target="_blank" rel="noopener">Astro</a> &amp; Tailwind CSS &mdash; A developer reference for iOS web quirks.
     </footer>
   </body>
 </html>

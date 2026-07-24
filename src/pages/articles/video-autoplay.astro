@@ -35,7 +35,7 @@ const resources = [
 
 <ArticleLayout
   title="Video Autoplay Restrictions"
-  summary="iOS Safari blocks video autoplay unless the video is muted and marked as inline. Audio never autoplays without a user gesture."
+  summary="iOS blocks video autoplay unless the video is muted and marked as inline. Affects all iOS browsers — audio never autoplays without a user gesture."
   affectedSince="iOS 10+ (2016)"
   slug="video-autoplay"
 >
@@ -156,7 +156,7 @@ const resources = [
 
   <p>
     A video with the <code>autoplay</code> attribute plays automatically on desktop and Android, but sits paused
-    on iOS Safari — even for silent background videos, hero loops, or ambient animations. The browser silently
+    on iOS — even for silent background videos, hero loops, or ambient animations. The browser silently
     ignores the <code>autoplay</code> attribute without throwing any errors.
   </p>
 
@@ -194,7 +194,7 @@ const resources = [
   </p>
 
   <p>
-    Without <code>playsinline</code>, iOS Safari opens the video in its full-screen native player, which also
+    Without <code>playsinline</code>, iOS opens the video in its full-screen native player, which also
     blocks autoplay. Without <code>muted</code>, even <code>playsinline</code> videos won't autoplay.
   </p>
 
