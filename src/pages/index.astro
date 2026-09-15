@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { withBase } from '../utils';
 
 const articles = [
   {
@@ -303,7 +304,7 @@ const articles = [
     </div>
     <div class="articles-grid">
       {articles.map((article) => (
-        <a href={`/articles/${article.slug}`} class="article-card">
+        <a href={withBase(`articles/${article.slug}`)} class="article-card">
           <div class="card-emoji">{article.emoji}</div>
           <h3 class="card-title">{article.title}</h3>
           <p class="card-desc">{article.description}</p>

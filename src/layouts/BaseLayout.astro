@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import { withBase } from '../utils';
 
 interface Props {
   title: string;
@@ -15,7 +16,7 @@ const { title, description = 'A practical reference for web developers documenti
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href={withBase('favicon.svg')} />
     <title>{title}</title>
     <style>
       .site-nav {
@@ -83,7 +84,7 @@ const { title, description = 'A practical reference for web developers documenti
   <body>
     <nav class="site-nav">
       <div class="site-nav-inner">
-        <a href="/" class="site-name">
+        <a href={withBase()} class="site-name">
           <span class="site-name-icon">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M2 3h10M2 7h7M2 11h5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
