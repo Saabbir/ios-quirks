@@ -60,7 +60,7 @@ ios-quirks/
 ## Adding a New Article
 
 1. **Create** `src/pages/articles/<slug>.astro` using the structure below
-2. **Register** it in the `articles` array in `src/pages/index.astro`
+2. **Register** it in the `articles` array in `src/data/articles.ts`
 
 ### Minimal article template
 
@@ -110,7 +110,7 @@ const resources = [
 
 ### Registering on the home page
 
-Add to the `articles` array in `src/pages/index.astro`:
+Add to the `articles` array in `src/data/articles.ts`:
 
 ```js
 {

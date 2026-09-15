@@ -149,7 +149,7 @@ Renders a sticky nav (56px, blurred `backdrop-filter`), a `<slot />`, and a foot
 title: string          // article heading displayed in hero and <title>
 summary: string        // one-sentence description — shown below title, used as meta description
 affectedSince: string  // short version string — shown in the red affected-badge
-slug: string           // reserved for future canonical URL use
+slug: string           // used to resolve previous/next article links from the shared articles list
 ```
 
 **`affectedSince` conventions — keep under ~40 characters:**
@@ -266,7 +266,7 @@ Target: 3–5 links per article. Prefer primary sources (MDN, WebKit bugs, CSS s
 
 ## Home Page Article Card
 
-Each card is defined in the `articles` array in `src/pages/index.astro`:
+Each card is defined in the `articles` array in `src/data/articles.ts`. That list also drives previous/next links on article pages. Home cards are rendered from the same array in `src/pages/index.astro`:
 
 ```ts
 {
