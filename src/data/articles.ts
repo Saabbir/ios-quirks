@@ -59,8 +59,8 @@ const allArticles: Article[] = [
   {
     slug: 'video-stuck-on-poster',
     emoji: '🎞️',
-    title: 'Lazy Video Stuck on the Poster',
-    description: 'A preload="none" video started with play() can silently never load — unpaused, readyState 0, no request.',
+    title: 'Lazy Background Video and the Stuck Poster',
+    description: 'How <video> really loads, where Chrome and Safari differ, and the race that leaves a preload="none" video frozen on its poster.',
     browser: 'All iOS Browsers',
     published: '2026-11-03',
   },

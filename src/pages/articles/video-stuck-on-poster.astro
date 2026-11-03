@@ -29,21 +29,21 @@ const resources = [
     description: 'HAVE_NOTHING (0) through HAVE_ENOUGH_DATA (4): the signal the watchdog relies on.',
   },
   {
+    title: 'Shopify Liquid: video_tag filter',
+    url: 'https://shopify.dev/docs/api/liquid/filters/video_tag',
+    description: 'How Shopify renders a video object to a <video> element with one <source> per rendition.',
+  },
+  {
     title: 'WebKit Blog: "New video policies for iOS"',
     url: 'https://webkit.org/blog/6784/new-video-policies-for-ios/',
     description: 'The muted + playsinline autoplay rules this pattern builds on.',
-  },
-  {
-    title: 'Playwright: WebKit browser',
-    url: 'https://playwright.dev/docs/browsers#webkit',
-    description: 'Headless WebKit for reproducing Safari-only media bugs from a script.',
   },
 ];
 ---
 
 <ArticleLayout
-  title="Lazy Video Stuck on the Poster"
-  summary={'A muted, inline video with preload="none" that is started from JavaScript sometimes never loads in Safari: play() leaves it unpaused, the poster stays forever, and no network request is ever made.'}
+  title="Lazy Background Video and the Stuck Poster"
+  summary={'A muted, inline video with preload="none" that is started by an IntersectionObserver plays every time in Chrome, but in Safari it sometimes never loads and stays frozen on its poster.'}
   affectedSince="WebKit · preload=none + early play()"
   slug="video-stuck-on-poster"
 >
@@ -70,7 +70,7 @@ const resources = [
       border: 1px solid var(--border);
       border-radius: 4px;
     }
-    .tile--slot {
+    .tile--video {
       grid-column: span 2;
       grid-row: span 2;
       position: relative;
@@ -78,8 +78,8 @@ const resources = [
       border: none;
       background: linear-gradient(135deg, rgba(10, 132, 255, 0.35), rgba(48, 209, 88, 0.15));
     }
-    /* frozen poster "image" */
-    .tile--slot::before {
+    /* stand-in for the video frame */
+    .tile--video::before {
       content: '';
       position: absolute;
       left: 18%;
@@ -96,7 +96,7 @@ const resources = [
       left: 40%;
       transform: rotate(-6deg);
     }
-    .slot-debug {
+    .tile-debug {
       position: absolute;
       left: 6px;
       right: 6px;
@@ -109,8 +109,8 @@ const resources = [
       line-height: 1.5;
       color: var(--text);
     }
-    .slot-debug .bad { color: var(--danger); }
-    .slot-debug .good { color: var(--success); }
+    .tile-debug .bad { color: var(--danger); }
+    .tile-debug .good { color: var(--success); }
     .live-dot {
       position: absolute;
       top: 6px;
@@ -124,6 +124,101 @@ const resources = [
       background: var(--success);
     }
     .live-dot--stuck { background: var(--danger); color: var(--text); }
+
+    /* lifecycle pipeline */
+    .pipeline {
+      list-style: none;
+      margin: 1.5rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      counter-reset: step;
+    }
+    .article-body .pipeline { padding-left: 0; }
+    .pipeline li {
+      counter-increment: step;
+      position: relative;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem 0.75rem 3rem;
+      margin: 0;
+      font-size: 0.875rem;
+      line-height: 1.6;
+    }
+    .pipeline li::before {
+      content: counter(step);
+      position: absolute;
+      left: 1rem;
+      top: 0.8rem;
+      width: 1.3rem;
+      height: 1.3rem;
+      border-radius: 50%;
+      background: rgba(10, 132, 255, 0.15);
+      color: var(--accent);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .pipeline .step-title {
+      display: block;
+      color: #fff;
+      font-weight: 600;
+    }
+    .pipeline .step-meta {
+      display: block;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.15rem;
+    }
+    .pipeline li.step--gate {
+      border-color: rgba(255, 214, 10, 0.25);
+      background: rgba(255, 214, 10, 0.05);
+    }
+    .pipeline li.step--gate::before {
+      background: rgba(255, 214, 10, 0.15);
+      color: var(--warning);
+    }
+
+    .compare-wrap {
+      overflow-x: auto;
+      margin: 1.25rem 0;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .compare {
+      width: 100%;
+      min-width: 560px;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    .compare th {
+      background: #161616;
+      padding: 0.6rem 1rem;
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .compare td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      color: #ccc;
+      line-height: 1.55;
+    }
+    .compare tr:last-child td { border-bottom: none; }
+    .compare td:first-child { color: #fff; font-weight: 600; }
+    .compare .diff { color: var(--warning); }
 
     .callout {
       background: rgba(255, 69, 58, 0.07);
@@ -177,28 +272,53 @@ const resources = [
   <h2>The Problem</h2>
 
   <p>
-    A common pattern for background or ambient video inside a page (a hero loop, or a promo tile in a product
-    grid) is <strong>lazy playback</strong>. The page ships <code>&lt;video muted loop playsinline preload="none" poster="…"&gt;</code>,
-    and an <code>IntersectionObserver</code> calls <code>video.play()</code> when the tile scrolls into view.
-    <code>preload="none"</code> keeps off-screen videos, and the copy hidden at the other breakpoint, from
-    downloading anything.
+    This is the standard way to add a background video loop to a page: a promo tile in a product grid, a hero
+    banner, an ambient clip. The video is muted so it may autoplay, and inline so iOS doesn't open the
+    full-screen player. <code>preload="none"</code> stops it downloading until it's needed, and an
+    <strong>IntersectionObserver</strong> starts it when it scrolls into view.
   </p>
 
-  <p>
-    In Chrome this works every time. In Safari it works <em>most</em> of the time. On some page loads the
-    tile shows only its poster and never starts. There is no console error and no rejected promise. The
-    Network panel has no request for the video file. Reloading the page often "fixes" it, which is why it
-    tends to reach QA as "sometimes the video doesn't show".
-  </p>
+  <CodeBlock
+    lang="html"
+    filename="index.html"
+    code={`<video class="lazy-video" muted loop playsinline preload="none" poster="poster.jpg">
+  <source src="clip.mp4" type="video/mp4">
+</video>`}
+  />
+
+  <CodeBlock
+    lang="js"
+    filename="lazy-video.js"
+    code={`const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    const video = entry.target;
+    if (entry.isIntersecting && video.paused) {
+      video.play().catch(() => {});
+    }
+  });
+});
+
+document.querySelectorAll('.lazy-video').forEach((video) => observer.observe(video));`}
+  />
+
+  <p>What you see:</p>
+  <ul>
+    <li><strong>Chrome:</strong> the video starts every time it scrolls into view.</li>
+    <li>
+      <strong>Safari (iPhone and Mac):</strong> it usually starts, but on some page loads the tile shows only
+      the poster, forever. There is no console error, and the Network panel has no request for
+      <code>clip.mp4</code>. Reloading often "fixes" it, so it tends to reach QA as "the video sometimes doesn't show".
+    </li>
+  </ul>
 
   <div class="mockup-row">
-    <IphoneMockup label="Stuck: paused=false, but nothing loads">
+    <IphoneMockup label="Safari: stuck on the poster">
       <div class="grid-screen">
         <div class="tile"></div>
         <div class="tile"></div>
-        <div class="tile tile--slot">
+        <div class="tile tile--video">
           <span class="live-dot live-dot--stuck">POSTER ONLY</span>
-          <div class="slot-debug">
+          <div class="tile-debug">
             paused: <span class="bad">false</span><br />
             readyState: <span class="bad">0</span> (HAVE_NOTHING)<br />
             requests: <span class="bad">none</span>
@@ -209,16 +329,16 @@ const resources = [
       </div>
     </IphoneMockup>
 
-    <IphoneMockup label="Fixed: preload lifted before play()">
+    <IphoneMockup label="Chrome, or Safari after the fix">
       <div class="grid-screen">
         <div class="tile"></div>
         <div class="tile"></div>
-        <div class="tile tile--slot tile--playing">
+        <div class="tile tile--video tile--playing">
           <span class="live-dot">PLAYING</span>
-          <div class="slot-debug">
+          <div class="tile-debug">
             paused: <span class="good">false</span><br />
             readyState: <span class="good">4</span> (HAVE_ENOUGH_DATA)<br />
-            requests: <span class="good">video.mp4 206</span>
+            requests: <span class="good">clip.mp4 206</span>
           </div>
         </div>
         <div class="tile"></div>
@@ -228,211 +348,224 @@ const resources = [
   </div>
 
   <p>
-    It shows up most often when the video element has <strong>just been inserted</strong> into the DOM. That
-    happens with a client-rendered list (Preact, React or Vue), a grid swapped through <code>innerHTML</code>
-    after filtering or sorting, or an observer that fires right away because the tile is already above the fold.
-  </p>
-
-  <h2>Root Cause</h2>
-
-  <p>
-    A media element doesn't pick its source the moment it is created. The HTML spec's
-    <strong>resource selection algorithm</strong> runs asynchronously. It waits for a stable state, looks at the
-    <code>src</code> attribute or the <code>&lt;source&gt;</code> children, and fires <code>loadstart</code>.
-    Then, if <code>preload</code> is <code>none</code>, it <em>suspends</em> the load and waits for a reason to resume.
-  </p>
-
-  <p>
-    Calling <code>play()</code> is one such reason, and it should resume the suspended load. The trouble is
-    timing. When <code>play()</code> lands <em>before</em> resource selection has run, WebKit records the play
-    intent and switches the element to "not paused". Resource selection then reaches its
-    <code>preload="none"</code> step and suspends, and nothing wakes it again. Here is the event log from
-    one of the stuck loads, recorded in WebKit (timings rounded):
-  </p>
-
-  <div class="timeline">
-    <div class="timeline-row"><span>0 ms</span><span>&lt;video preload="none"&gt; inserted by the framework</span></div>
-    <div class="timeline-row"><span>+2 ms</span><span>observer fires → <code>play()</code> called with readyState 0</span></div>
-    <div class="timeline-row"><span>+3 ms</span><span><code>play</code> event, then <code>waiting</code> (paused is now false)</span></div>
-    <div class="timeline-row"><span>+5 ms</span><span><code>loadstart</code>: a source was selected</span></div>
-    <div class="timeline-row timeline-row--bad"><span>∞</span><span>No request, no <code>loadedmetadata</code>, play() promise never settles</span></div>
-  </div>
-
-  <p>
-    In our tests this happened in 4 out of 4 cold loads on the affected page in desktop WebKit. iPhone
-    emulation was less consistent. Chrome never reproduced it: Blink resumes the load whenever
-    <code>play()</code> is called, before or after resource selection.
-  </p>
-
-  <div class="callout">
-    <strong>Why it never recovers by itself:</strong> a stuck video reports <code>paused === false</code>.
-    Most lazy-play code guards with <code>if (video.paused) video.play()</code> to avoid duplicate calls, so
-    scrolling away and back does nothing. The element really is waiting for data that was never requested.
-  </div>
-
-  <p>
-    There are two unrelated reasons a muted video might also refuse to start. Telling them apart makes
-    debugging much faster:
-  </p>
-  <ul>
-    <li>
-      <strong>Autoplay policy</strong> (Low Power Mode, or the site set to "Never Auto-Play"). Here
-      <code>play()</code> <em>rejects</em> with <code>NotAllowedError</code> and <code>paused</code> stays
-      <code>true</code>. This is visible and catchable.
-    </li>
-    <li>
-      <strong>This race</strong>. Here <code>play()</code> neither resolves nor rejects, <code>paused</code> is
-      <code>false</code>, <code>readyState</code> is <code>0</code>, and there is no network request.
-    </li>
-  </ul>
-
-  <h2>Fix 1: Diagnose it first</h2>
-
-  <p>
-    Before changing anything, confirm you're seeing this race and not a codec, CORS or autoplay problem.
-    Paste this into the Web Inspector console (Safari → Develop → your device) on a page where a tile is stuck:
+    It happens most when the <code>&lt;video&gt;</code> has <strong>just been inserted</strong> and is already in
+    view. Typical cases are a list rendered client-side (React, Preact, Vue), a grid swapped through
+    <code>innerHTML</code> after filtering or sorting, or a video near the top of the page. You can confirm a
+    stuck tile in the console:
   </p>
 
   <CodeBlock
     lang="js"
-    filename="console — inspect stuck videos"
+    filename="console"
     code={`[...document.querySelectorAll('video')].map((v) => ({
-  src: (v.currentSrc || '(none selected)').split('/').pop(),
-  paused: v.paused,          // false + readyState 0 = this bug
-  readyState: v.readyState,  // 0 = HAVE_NOTHING
-  networkState: v.networkState, // 1 = NETWORK_IDLE (suspended), 2 = LOADING
-  preload: v.preload,
-  visible: v.offsetParent !== null,
+  paused: v.paused,             // false…
+  readyState: v.readyState,     // …but 0: no data at all
+  networkState: v.networkState, // 1: idle / suspended
+  preload: v.preload,           // "none"
 }));`}
   />
 
   <p>
-    The tell is a visible video with <code>paused: false</code>, <code>readyState: 0</code>,
-    <code>networkState: 1</code> and <code>preload: "none"</code>. To catch it in the act, log the media events
-    before your own script runs:
+    The tell is <code>paused: false</code> together with <code>readyState: 0</code>. The video thinks it is
+    playing, but it has no data and isn't fetching any.
   </p>
 
-  <CodeBlock
-    lang="js"
-    filename="media-event-log.js"
-    code={`// Load this before your lazy-play code (e.g. Playwright addInitScript, or first <script> in <head>)
-const t = () => Math.round(performance.now());
-const nativePlay = HTMLMediaElement.prototype.play;
+  <h2>Root Cause</h2>
 
-HTMLMediaElement.prototype.play = function () {
-  console.log(t(), 'play() called, readyState =', this.readyState);
-  const p = nativePlay.call(this);
-  p?.then(
-    () => console.log(t(), 'play() resolved'),
-    (e) => console.log(t(), 'play() rejected:', e.name),
-  );
-  return p;
-};
-
-['loadstart', 'play', 'waiting', 'loadedmetadata', 'canplay', 'playing', 'stalled', 'suspend', 'error']
-  .forEach((type) => {
-    document.addEventListener(type, (e) => {
-      if (e.target instanceof HTMLVideoElement) {
-        console.log(t(), type, 'readyState =', e.target.readyState);
-      }
-    }, true); // media events don't bubble, so listen in the capture phase
-  });`}
-  />
+  <h3>How a &lt;video&gt; loads</h3>
 
   <p>
-    A healthy start logs <code>loadstart → loadedmetadata → canplay → playing</code>. A stuck one stops after
-    <code>loadstart</code> / <code>waiting</code>, with no request for the file in the Network tab.
+    A video element is a small state machine, not an image that moves. These are the steps between inserting
+    the element and seeing motion:
   </p>
 
-  <h2>Fix 2: Lift preload right before play()</h2>
+  <ol class="pipeline">
+    <li>
+      <span class="step-title">Element created</span>
+      Parsed, set through <code>innerHTML</code>, or inserted by a framework. Nothing is chosen or fetched yet.
+      <span class="step-meta">networkState 0 · readyState 0</span>
+    </li>
+    <li>
+      <span class="step-title">Resource selection (asynchronous)</span>
+      The browser walks the <code>&lt;source&gt;</code> children in order and takes the <strong>first</strong> one it
+      might be able to play. It doesn't look for the best one.
+      <span class="step-meta">fires loadstart · currentSrc set</span>
+    </li>
+    <li class="step--gate">
+      <span class="step-title">The preload gate</span>
+      With <code>none</code> the load is suspended here, and nothing is fetched until playback is requested.
+      <code>metadata</code> and <code>auto</code> carry on fetching.
+      <span class="step-meta">networkState 1 (suspended) or 2 (loading)</span>
+    </li>
+    <li>
+      <span class="step-title">Fetch and decode</span>
+      Byte-range requests for MP4, or a playlist and its segments for HLS. <code>readyState</code> climbs.
+      <span class="step-meta">loadedmetadata → loadeddata → canplay → canplaythrough</span>
+    </li>
+    <li class="step--gate">
+      <span class="step-title">play() and the autoplay policy</span>
+      A muted, inline video may start without a user gesture unless the platform blocks it, for example in Low
+      Power Mode. A blocked start rejects with <code>NotAllowedError</code>.
+      <span class="step-meta">fires play · paused becomes false straight away</span>
+    </li>
+    <li>
+      <span class="step-title">First frame painted</span>
+      Only now are frames on screen.
+      <span class="step-meta">fires playing · the play() promise resolves</span>
+    </li>
+  </ol>
 
   <p>
-    The core fix is one line. Set <code>preload</code> to <code>auto</code> on the element you're about to
-    play, immediately before calling <code>play()</code>. Then whichever order WebKit runs things in, resource
-    selection finds nothing telling it to suspend, and it starts fetching.
+    Note that <code>paused</code> flips to <code>false</code> at step 5, before any data exists. Only the
+    <code>playing</code> event means real frames are showing. With <code>preload="none"</code>, the element sits at
+    step 3 until <code>play()</code> wakes it up.
+  </p>
+
+  <h3>The race</h3>
+
+  <p>
+    <code>play()</code> is supposed to wake a load suspended at step 3, and in Chrome it always does. In WebKit,
+    the result depends on <em>when</em> you call it. If <code>play()</code> arrives <strong>before resource
+    selection has run</strong>, WebKit records the play request and marks the element unpaused. Resource
+    selection then reaches <code>preload="none"</code> and suspends, and nothing ever wakes it. A logged stuck
+    load in WebKit (timings rounded):
+  </p>
+
+  <div class="timeline">
+    <div class="timeline-row"><span>0 ms</span><span><code>&lt;video preload="none"&gt;</code> inserted</span></div>
+    <div class="timeline-row"><span>+2 ms</span><span>observer fires immediately (already in view) → <code>play()</code></span></div>
+    <div class="timeline-row"><span>+3 ms</span><span><code>play</code>, <code>waiting</code>: paused is now false</span></div>
+    <div class="timeline-row"><span>+5 ms</span><span><code>loadstart</code>: resource selection only now picks a source</span></div>
+    <div class="timeline-row timeline-row--bad"><span>∞</span><span>suspended by preload="none": no request, and play() never settles</span></div>
+  </div>
+
+  <p>
+    When <code>play()</code> comes <em>after</em> <code>loadstart</code>, the load resumes normally. That is why the bug
+    is intermittent. It depends on whether the observer's first callback lands before or after resource
+    selection. In our headless WebKit runs, a freshly inserted, already-visible video got stuck on every
+    cold load. Chrome never did.
+  </p>
+
+  <div class="callout">
+    <strong>Why it never recovers:</strong> the stuck video reports <code>paused === false</code>, so the
+    <code>if (video.paused)</code> guard in the observer skips it. Scrolling away and back does nothing.
+  </div>
+
+  <h3>Other differences that look similar</h3>
+
+  <p>Several other Chrome/Safari differences produce a "video didn't show" report:</p>
+
+  <div class="compare-wrap">
+    <table class="compare">
+      <thead>
+        <tr><th>Behaviour</th><th>Chrome (Blink)</th><th>Safari (WebKit, iOS &amp; macOS)</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>preload="none"</code> then <code>play()</code></td>
+          <td>Always resumes the load</td>
+          <td class="diff">An early <code>play()</code> can leave it suspended forever (this article)</td>
+        </tr>
+        <tr>
+          <td>Muted autoplay</td>
+          <td>Allowed</td>
+          <td class="diff">Blocked in Low Power Mode or when the site is set to "Never Auto-Play": <code>NotAllowedError</code></td>
+        </tr>
+        <tr>
+          <td>Between <code>play()</code> and the first frame</td>
+          <td>Keeps showing the poster</td>
+          <td class="diff">Can paint the element blank even with <code>poster</code> set</td>
+        </tr>
+        <tr>
+          <td>Native HLS (<code>.m3u8</code>)</td>
+          <td>Recent versions report support too (we saw <code>canPlayType</code> → "maybe" in Chrome 154)</td>
+          <td>Supported. An HLS source listed first is chosen, and it starts at a low rendition</td>
+        </tr>
+        <tr>
+          <td>MP4 delivery</td>
+          <td>Tolerates servers without range support</td>
+          <td>Needs byte-range (<code>206</code>) responses</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>The quickest way to tell them apart is the state of the stuck element:</p>
+
+  <div class="compare-wrap">
+    <table class="compare">
+      <thead>
+        <tr><th>Cause</th><th>play() promise</th><th>paused</th><th>readyState</th><th>Network</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>This race</td><td>never settles</td><td class="diff">false</td><td class="diff">0</td><td class="diff">no request</td></tr>
+        <tr><td>Autoplay policy</td><td>rejects <code>NotAllowedError</code></td><td>true</td><td>any</td><td>may have fetched</td></tr>
+        <tr><td>Broken file / CORS / codec</td><td>rejects, or an <code>error</code> event fires</td><td>varies</td><td>0</td><td>request fails</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tip">
+    <strong>On iOS, every browser is WebKit.</strong> Chrome on iPhone behaves like the Safari column.
+    "Works in Chrome" on a laptop says nothing about Chrome on an iPhone.
+  </div>
+
+  <h2>The Fix</h2>
+
+  <h3>Step 1: Lift preload right before play()</h3>
+
+  <p>
+    This is the core fix, and it is one line. On the element you are about to play, set <code>preload</code> to
+    <code>auto</code> immediately before <code>play()</code>. Whichever order WebKit runs things in, resource
+    selection then finds nothing telling it to suspend.
   </p>
 
   <CodeBlock
     lang="js"
     filename="lazy-video.js"
     code={`function playVideo(video) {
-  // Safari can let preload="none" win over a play() that arrives before resource selection
-  // has run: the load stays suspended forever. Lifting preload first removes the race.
-  video.preload = 'auto';
+  video.preload = 'auto'; // don't let preload="none" win the race against play()
   return video.play();
 }`}
   />
 
   <p>
-    This keeps the bandwidth benefit. Only videos that reach <code>playVideo()</code> lose
-    <code>preload="none"</code>. Off-screen videos and the copy hidden at the other breakpoint
-    (<code>display: none</code> never intersects) keep it and download nothing. Leave the markup as it was:
+    You keep the bandwidth saving. Only a video that actually reaches <code>playVideo()</code> loses
+    <code>preload="none"</code>. Off-screen videos, and copies hidden with <code>display: none</code> (which
+    never intersect), still download nothing.
   </p>
 
-  <CodeBlock
-    lang="html"
-    filename="tile.html"
-    code={`<video
-  class="lazy-video"
-  muted
-  loop
-  playsinline
-  preload="none"
-  poster="poster-1200.jpg"
->
-  <source src="clip-1080p.mp4" type="video/mp4">
-  <source src="clip.m3u8" type="application/x-mpegURL">
-</video>`}
-  />
-
-  <div class="tip">
-    <strong>Don't use autoplay here.</strong> <code>autoplay</code> on an off-screen or hidden video makes
-    Safari download it straight away, which defeats the point of lazy playback. Let the observer decide when
-    to play.
-  </div>
-
-  <h2>Fix 3: Add a one-shot watchdog</h2>
+  <h3>Step 2: Add a one-shot watchdog</h3>
 
   <p>
-    Fix 2 removes the race we could reproduce. Media pipelines have other ways to stall, though: a dropped
-    connection on the first range request, or a CDN hiccup. And as covered above, a stalled video never
-    retries, because it already reports unpaused. A small watchdog covers all of these. If no data has arrived
-    a few seconds after <code>play()</code>, it reloads the element once and plays again.
+    A video can stall in other ways too, such as a dropped first request or a CDN hiccup. And a stalled video
+    never retries, because it already reports unpaused. If no data has arrived a few seconds after
+    <code>play()</code>, reload it once:
   </p>
 
   <CodeBlock
     lang="js"
     filename="lazy-video.js"
-    code={`const START_TIMEOUT = 4000;
-
-function watchStart(video) {
-  if (video._startTimer || video._restarted) return; // one watchdog, one retry per element
+    code={`function watchStart(video) {
+  if (video._startTimer || video._restarted) return; // one watchdog, one retry
 
   video._startTimer = setTimeout(() => {
     video._startTimer = null;
-
-    // Gone from the DOM, already has data, or already playing: nothing to do.
     if (!document.contains(video) || video.readyState > 0 || video.classList.contains('is-playing')) return;
 
     video._restarted = true;
-    video.load(); // re-runs resource selection from scratch (preload is 'auto' by now)
+    video.load(); // re-runs resource selection; preload is 'auto' by now
     video.play()?.catch(() => {});
-  }, START_TIMEOUT);
+  }, 4000);
 }`}
   />
 
-  <p>
-    <code>load()</code> is the important call. It resets the element and re-runs resource selection, and by
-    now <code>preload</code> is <code>auto</code>, so the second attempt fetches straight away. Retry only
-    once, so a broken file can't cause an endless reload loop.
-  </p>
-
-  <h2>Fix 4: Handle autoplay rejections separately</h2>
+  <h3>Step 3: Don't swallow autoplay rejections</h3>
 
   <p>
-    Autoplay policy failures look similar but need a different response. Reloading won't help, because
-    Safari wants a user gesture. Catch <code>NotAllowedError</code>, remember the video, and retry it on the
-    visitor's next tap, click or key press:
+    <code>.catch(() =&gt; {'{}'})</code> hides the Low Power Mode case, so the tile never starts and nothing says
+    why. Reloading won't help either, because Safari wants a gesture. Remember the blocked videos and retry
+    them on the next tap, click or key press:
   </p>
 
   <CodeBlock
@@ -443,35 +576,42 @@ const GESTURES = ['touchend', 'click', 'keydown'];
 
 function retryBlocked() {
   GESTURES.forEach((type) => document.removeEventListener(type, retryBlocked, true));
-  blocked.forEach((video) => { if (document.contains(video)) playVideo(video); }); // playVideo from Fix 2
+  blocked.forEach((video) => { if (document.contains(video)) playVideo(video); });
   blocked.clear();
 }
 
 function onPlayRejected(video, error) {
-  if (!error || error.name !== 'NotAllowedError') return;
-  if (!blocked.size) {
-    GESTURES.forEach((type) => document.addEventListener(type, retryBlocked, true));
-  }
+  if (error?.name !== 'NotAllowedError') return;
+  if (!blocked.size) GESTURES.forEach((type) => document.addEventListener(type, retryBlocked, true));
   blocked.add(video);
 }`}
   />
 
-  <h2>Fix 5: Never show a blank tile</h2>
+  <h3>Step 4: Never show a blank tile</h3>
 
   <p>
-    Safari can paint the <code>&lt;video&gt;</code> element black or transparent between <code>play()</code>
-    and the first decoded frame, even when the <code>poster</code> attribute is set. Put the poster on the
-    tile's own background as well. Keep the video at <code>opacity: 0</code> until its <code>playing</code>
-    event fires. A slow or failed start then looks like a still image, not a hole in the layout.
+    Safari can paint the video blank between <code>play()</code> and the first frame. Put the poster on the
+    container's background as well, and keep the video transparent until <code>playing</code> fires. A slow
+    or failed start then looks like a still image.
   </p>
 
   <CodeBlock
+    lang="html"
+    filename="index.html"
+    code={`<div class="video-tile" style="background-image: url('poster.jpg')">
+  <video class="lazy-video" muted loop playsinline preload="none" poster="poster.jpg">
+    <source src="clip.mp4" type="video/mp4">
+  </video>
+</div>`}
+  />
+
+  <CodeBlock
     lang="css"
-    filename="tile.css"
-    code={`.tile {
+    filename="video-tile.css"
+    code={`.video-tile {
   position: relative;
-  background: center / cover no-repeat;
-  /* background-image is set inline to the same URL as the video's poster */
+  background-position: center;
+  background-size: cover;
 }
 
 .lazy-video {
@@ -489,11 +629,10 @@ function onPlayRejected(video, error) {
 }`}
   />
 
-  <h2>Putting it together</h2>
+  <h3>Step 5: All together</h3>
 
   <p>
-    The complete helper below combines all of these. Call <code>observeVideos()</code> after server render
-    <em>and</em> after every client-side re-render (filter, sort, infinite scroll). The
+    Call <code>observeVideos()</code> once on load, and again after anything re-renders the list. The
     <code>data-lazy-observed</code> guard makes repeat calls safe.
   </p>
 
@@ -504,25 +643,17 @@ function onPlayRejected(video, error) {
   _observer: null,
   _blocked: new Set(),
 
-  _retryBlocked() {
-    this._blocked.forEach((video) => {
-      if (document.contains(video)) this._play(video);
-    });
-    this._blocked.clear();
-  },
-
   _play(video) {
-    video.preload = 'auto'; // Fix 2: remove the preload="none" race
+    video.preload = 'auto';                 // Step 1
     const playPromise = video.play();
-    this._watchStart(video); // Fix 3: backstop for any other stalled start
-    if (!playPromise || !playPromise.catch) return;
-
-    playPromise.catch((error) => { // Fix 4: autoplay policy → retry on next gesture
-      if (!error || error.name !== 'NotAllowedError') return;
+    this._watchStart(video);                // Step 2
+    playPromise?.catch((error) => {         // Step 3
+      if (error?.name !== 'NotAllowedError') return;
       if (!this._blocked.size) {
         const retry = () => {
           ['touchend', 'click', 'keydown'].forEach((type) => document.removeEventListener(type, retry, true));
-          this._retryBlocked();
+          this._blocked.forEach((v) => { if (document.contains(v)) this._play(v); });
+          this._blocked.clear();
         };
         ['touchend', 'click', 'keydown'].forEach((type) => document.addEventListener(type, retry, true));
       }
@@ -537,103 +668,200 @@ function onPlayRejected(video, error) {
       if (!document.contains(video) || video.readyState > 0 || video.classList.contains('is-playing')) return;
       video._restarted = true;
       video.load();
-      const playPromise = video.play();
-      if (playPromise && playPromise.catch) playPromise.catch(() => {});
+      video.play()?.catch(() => {});
     }, 4000);
   },
 
   _getObserver() {
-    if (!this._observer) {
-      this._observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.target.paused) this._play(entry.target);
-        });
-      }, { rootMargin: '200px 0px' }); // start slightly before the tile is on screen
-    }
+    this._observer ??= new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && entry.target.paused) this._play(entry.target);
+      });
+    }, { rootMargin: '200px 0px' }); // start just before it scrolls on screen
     return this._observer;
   },
 
   observeVideos(root = document) {
     if (!('IntersectionObserver' in window)) return;
-
     root.querySelectorAll('video.lazy-video:not([data-lazy-observed])').forEach((video) => {
       video.setAttribute('data-lazy-observed', 'true');
-      // Fix 5: reveal only once real frames are on screen
-      video.addEventListener('playing', () => video.classList.add('is-playing'));
+      video.addEventListener('playing', () => video.classList.add('is-playing')); // Step 4
       this._getObserver().observe(video);
     });
   },
 };
 
 LazyVideo.observeVideos();
-// Re-scan whenever your list re-renders, e.g.:
-// document.addEventListener('products:rendered', () => LazyVideo.observeVideos());`}
+// After a client-side re-render: LazyVideo.observeVideos(container);`}
   />
 
-  <h3>Step-by-step checklist</h3>
-  <ol>
-    <li>Confirm the symptom with the console snippet: visible video, <code>paused: false</code>, <code>readyState: 0</code>, no request.</li>
-    <li>Keep <code>muted loop playsinline preload="none"</code> in the markup, and drop <code>autoplay</code>.</li>
-    <li>In the function that calls <code>play()</code>, set <code>video.preload = 'auto'</code> on the line before.</li>
-    <li>Start a one-shot 4 s watchdog after <code>play()</code>. If <code>readyState</code> is still <code>0</code>, call <code>load()</code> then <code>play()</code> once.</li>
-    <li>Catch <code>NotAllowedError</code> separately and retry on the next user gesture.</li>
-    <li>Mirror the poster as the tile's background and fade the video in on <code>playing</code>.</li>
-    <li>Re-run <code>observeVideos()</code> after every client-side re-render.</li>
-  </ol>
-
-  <h3>Verifying the fix</h3>
+  <h3>Verifying it</h3>
 
   <p>
-    Because the bug is intermittent, one manual reload proves nothing. Script it instead. Headless WebKit
-    in Playwright reproduces the race reliably, so you can count successes over many cold loads:
+    The bug is intermittent, so one manual reload proves nothing. Count successes over many cold loads in
+    headless WebKit instead:
   </p>
 
   <CodeBlock
     lang="js"
     filename="verify-video-start.mjs"
     code={`// npm i -D playwright && npx playwright install webkit
-import { webkit, devices } from 'playwright';
+import { webkit } from 'playwright';
 
-const URL = process.argv[2];
-const RUNS = 10;
 const browser = await webkit.launch();
 let ok = 0;
 
-for (let i = 0; i < RUNS; i++) {
-  // Fresh context = cold cache each run. Swap in devices['iPhone 15'] to test mobile.
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+for (let i = 0; i < 10; i++) {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } }); // cold cache
   const page = await context.newPage();
-  await page.goto(URL, { waitUntil: 'load' });
-  await page.waitForTimeout(6000); // longer than the 4 s watchdog
+  await page.goto(process.argv[2], { waitUntil: 'load' });
+  await page.waitForTimeout(6000); // longer than the watchdog
 
-  const states = await page.$$eval('video.lazy-video', (videos) =>
-    videos
-      .filter((v) => v.offsetParent !== null) // only the breakpoint that is shown
-      .map((v) => ({ playing: !v.paused && v.readyState >= 3, readyState: v.readyState })),
-  );
-  const pass = states.length > 0 && states.every((s) => s.playing);
-  if (pass) ok++;
-  console.log('run ' + (i + 1) + ': ' + (pass ? 'PLAYING' : 'STUCK'), JSON.stringify(states));
+  const playing = await page.$$eval('video.lazy-video', (videos) => videos
+    .filter((v) => v.offsetParent !== null)
+    .every((v) => !v.paused && v.readyState >= 3));
+  if (playing) ok++;
   await context.close();
 }
 
-console.log(ok + '/' + RUNS + ' runs playing');
+console.log(ok + '/10 cold loads playing');
 await browser.close();`}
   />
 
   <div class="tip">
-    <strong>Codec note:</strong> Playwright's bundled Chromium ships without H.264, so an MP4 there reports
-    <code>NETWORK_NO_SOURCE</code>. That's a test-harness limitation, not this bug. Test Chrome behaviour in
-    real Chrome. Before the fix, the same WebKit script got stuck on most cold loads of the affected page.
-    After it, every run played within about half a second of <code>play()</code>, and only the visible
-    breakpoint's file was requested.
+    <strong>Harness gotcha:</strong> Playwright's bundled Chromium has no H.264, so an MP4 there reports
+    <code>NETWORK_NO_SOURCE</code>. Use WebKit as the Safari proxy, check Chrome in real Chrome, and confirm on a
+    real iPhone before shipping.
+  </div>
+
+  <h2>Applying It in Shopify (video_tag)</h2>
+
+  <p>
+    Shopify video (a <code>video</code> section setting, a metafield, or a metaobject field) is usually rendered
+    with the <code>video_tag</code> filter. Everything above applies, but <code>video_tag</code> has two defaults
+    worth knowing about.
+  </p>
+
+  <CodeBlock
+    lang="liquid"
+    filename="sections/promo-video.liquid"
+    code={`<div class="video-tile" style="background-image: url('{{ section.settings.video.preview_image | image_url: width: 1200 }}')">
+  {{
+    section.settings.video
+    | video_tag:
+      class: 'lazy-video',
+      muted: true,
+      loop: true,
+      playsinline: true,
+      preload: 'none'
+  }}
+</div>`}
+  />
+
+  <ul>
+    <li>
+      <strong>Source order is Shopify's, not yours.</strong> <code>video_tag</code> emits one
+      <code>&lt;source&gt;</code> per entry in <code>video.sources</code>, in stored order. That is usually the
+      HLS <code>.m3u8</code> playlist first, then the MP4 renditions. Safari, and recent Chrome, take the HLS
+      source, and adaptive streaming starts at a low rendition. On a large desktop tile, the first seconds look
+      noticeably softer than the poster. That's fine for small or mobile tiles. For large ones, see below.
+    </li>
+    <li>
+      <strong>Don't pass <code>autoplay: true</code> for below-the-fold video.</strong> It starts the download
+      immediately, for every copy, including one hidden at another breakpoint. Use <code>preload: 'none'</code> and
+      the observer.
+    </li>
+    <li>
+      <strong>The poster is set for you</strong> from <code>video.preview_image</code>. Still mirror it as the
+      container background (as above) for Step 4.
+    </li>
+  </ul>
+
+  <p>
+    If you need to control the order, for example the sharpest MP4 first on desktop, build the element
+    yourself from <code>video.sources</code>:
+  </p>
+
+  <CodeBlock
+    lang="liquid"
+    filename="snippets/lazy-video.liquid"
+    code={`{%- assign hls_sources = video.sources | where: 'format', 'm3u8' -%}
+{%- assign mp4_sources = video.sources | where: 'format', 'mp4' | sort: 'height' | reverse -%}
+{%- assign ordered_sources = mp4_sources | concat: hls_sources -%}
+
+<video
+  class="lazy-video"
+  muted
+  loop
+  playsinline
+  preload="none"
+  poster="{{ video.preview_image | image_url: width: 1200 }}"
+>
+  {%- for source in ordered_sources -%}
+    <source src="{{ source.url }}" type="{{ source.mime_type }}">
+  {%- endfor -%}
+</video>`}
+  />
+
+  <div class="tip">
+    <strong>Two copies for two breakpoints?</strong> A common theme pattern renders a desktop and a mobile
+    video and hides one with CSS. That is fine with <code>preload="none"</code> and the observer: the hidden copy
+    never intersects, so it never loads. For the mobile copy, list HLS first (lighter on cellular); for desktop,
+    MP4 first.
+  </div>
+
+  <h2>Common Mistakes</h2>
+
+  <div class="compare-wrap">
+    <table class="compare">
+      <thead>
+        <tr><th>Mistake</th><th>What you see</th><th>Do this instead</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Calling <code>play()</code> on a fresh <code>preload="none"</code> video</td>
+          <td>Safari: stuck on the poster, intermittently</td>
+          <td>Set <code>preload = 'auto'</code> first (Step 1)</td>
+        </tr>
+        <tr>
+          <td>Treating <code>!paused</code> as success</td>
+          <td>Stalled videos are never retried</td>
+          <td>Use <code>playing</code> / <code>readyState</code>, plus a watchdog</td>
+        </tr>
+        <tr>
+          <td><code>play().catch(() =&gt; {'{}'})</code></td>
+          <td>Low Power Mode: never starts, no clue why</td>
+          <td>Handle <code>NotAllowedError</code> and retry on a gesture</td>
+        </tr>
+        <tr>
+          <td>Poster attribute only</td>
+          <td>Blank tile in Safari while starting, or forever if it fails</td>
+          <td>Poster as container background, and fade in on <code>playing</code></td>
+        </tr>
+        <tr>
+          <td>Accepting the default source order</td>
+          <td>HLS chosen; large tiles look soft</td>
+          <td>Order sources on purpose per breakpoint</td>
+        </tr>
+        <tr>
+          <td><code>autoplay</code> or <code>preload="auto"</code> on every copy</td>
+          <td>Hidden and off-screen videos download too</td>
+          <td><code>preload="none"</code> + an observer</td>
+        </tr>
+        <tr>
+          <td>Waiting on an app event or timer before observing</td>
+          <td>Visible delay before motion</td>
+          <td>Observe immediately, and re-observe after re-renders</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <h2>Browser Support</h2>
 
   <p>
-    "Partial" here means a lazily started <code>preload="none"</code> video can intermittently fail to load
-    without the fix above. With the fix, playback starts reliably everywhere.
+    "Partial" means a lazily started <code>preload="none"</code> video can intermittently fail to load without
+    the fix. With the fix, it starts reliably everywhere.
   </p>
 
   <BrowserSupport rows={browserRows} />
