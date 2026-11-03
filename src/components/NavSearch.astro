@@ -1,0 +1,289 @@
+---
+import { articles } from '../data/articles';
+import { withBase } from '../utils';
+
+const recentSlugs = new Set(articles.slice(0, 3).map((article) => article.slug));
+---
+
+<div class="nav-search" data-nav-search>
+  <label for="nav-article-search" class="sr-only">Search articles</label>
+  <svg class="nav-search-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.8"/>
+    <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>
+  <input
+    id="nav-article-search"
+    class="nav-search-input"
+    type="search"
+    placeholder="Search articles…"
+    autocomplete="off"
+    spellcheck="false"
+    role="combobox"
+    aria-expanded="false"
+    aria-controls="nav-search-list"
+    aria-autocomplete="list"
+  />
+  <kbd class="nav-search-hint">/</kbd>
+  <div class="nav-search-panel" data-nav-search-panel hidden>
+    <p class="nav-search-heading" data-nav-search-heading>Recent</p>
+    <div class="nav-search-list" id="nav-search-list" role="listbox">
+      {articles.map((article) => (
+        <a
+          class="nav-search-item"
+          href={withBase(`articles/${article.slug}`)}
+          role="option"
+          data-search={`${article.title} ${article.description} ${article.slug} ${article.browser}`.toLowerCase()}
+          data-recent={recentSlugs.has(article.slug) ? 'true' : undefined}
+          hidden
+        >
+          <span class="nav-search-emoji">{article.emoji}</span>
+          <span class="nav-search-copy">
+            <span class="nav-search-title">{article.title}</span>
+            <span class="nav-search-desc">{article.description}</span>
+          </span>
+        </a>
+      ))}
+    </div>
+    <p class="nav-search-empty" data-nav-search-empty hidden>No articles match that search.</p>
+  </div>
+</div>
+
+<style>
+  .nav-search {
+    position: relative;
+    flex: 1;
+    max-width: 420px;
+    margin-left: auto;
+    min-width: 0;
+  }
+  .nav-search-icon {
+    position: absolute;
+    left: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+  .nav-search-input {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    height: 34px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 0 2.1rem 0 2.1rem;
+    font-size: 0.85rem;
+    font-family: inherit;
+    line-height: 1.5;
+  }
+  .nav-search-input::-webkit-search-decoration,
+  .nav-search-input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+  }
+  .nav-search-input::placeholder {
+    color: var(--muted);
+  }
+  .nav-search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .nav-search-hint {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1px 6px;
+    line-height: 1.5;
+    pointer-events: none;
+  }
+  .nav-search.is-open .nav-search-hint,
+  .nav-search.has-query .nav-search-hint {
+    display: none;
+  }
+  .nav-search-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+    z-index: 110;
+  }
+  .nav-search-heading {
+    margin: 0;
+    padding: 0.7rem 0.85rem 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    white-space: nowrap;
+  }
+  .nav-search-list {
+    max-height: min(70vh, 360px);
+    overflow-y: auto;
+  }
+  .nav-search-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.65rem 0.85rem;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .nav-search-item[hidden] {
+    display: none;
+  }
+  .nav-search-item:hover,
+  .nav-search-item:focus-visible {
+    background: rgba(10, 132, 255, 0.08);
+    text-decoration: none;
+    color: var(--text);
+  }
+  .nav-search-emoji {
+    flex-shrink: 0;
+    line-height: 1.3;
+  }
+  .nav-search-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .nav-search-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .nav-search-desc {
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .nav-search-empty {
+    margin: 0;
+    padding: 0.85rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  @media (max-width: 640px) {
+    .nav-search {
+      max-width: none;
+    }
+    .nav-search-hint {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-nav-search]');
+  const input = document.getElementById('nav-article-search') as HTMLInputElement | null;
+  const panel = root?.querySelector<HTMLElement>('[data-nav-search-panel]');
+  const heading = root?.querySelector<HTMLElement>('[data-nav-search-heading]');
+  const empty = root?.querySelector<HTMLElement>('[data-nav-search-empty]');
+  const items = root?.querySelectorAll<HTMLAnchorElement>('.nav-search-item');
+
+  function openPanel() {
+    if (!panel || !input || !root) return;
+    panel.hidden = false;
+    root.classList.add('is-open');
+    input.setAttribute('aria-expanded', 'true');
+  }
+
+  function closePanel() {
+    if (!panel || !input || !root) return;
+    panel.hidden = true;
+    root.classList.remove('is-open');
+    input.setAttribute('aria-expanded', 'false');
+  }
+
+  function applyQuery() {
+    if (!input || !items) return;
+    const query = input.value.trim().toLowerCase();
+    const searching = query.length > 0;
+    let visible = 0;
+
+    root?.classList.toggle('has-query', searching);
+    if (heading) heading.textContent = searching ? 'Results' : 'Recent';
+
+    items.forEach((item) => {
+      const match = searching
+        ? (item.dataset.search ?? '').includes(query)
+        : item.dataset.recent === 'true';
+      item.hidden = !match;
+      if (match) visible += 1;
+    });
+
+    if (empty) empty.hidden = visible > 0;
+    if (heading) heading.hidden = visible === 0;
+  }
+
+  input?.addEventListener('focus', () => {
+    applyQuery();
+    openPanel();
+  });
+
+  input?.addEventListener('click', () => {
+    applyQuery();
+    openPanel();
+  });
+
+  input?.addEventListener('input', () => {
+    applyQuery();
+    openPanel();
+  });
+
+  input?.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      input.value = '';
+      applyQuery();
+      closePanel();
+      input.blur();
+    }
+  });
+
+  document.addEventListener('pointerdown', (event) => {
+    if (!root || root.contains(event.target as Node)) return;
+    closePanel();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== '/') return;
+    const target = event.target as HTMLElement | null;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+      return;
+    }
+    event.preventDefault();
+    input?.focus();
+  });
+</script>

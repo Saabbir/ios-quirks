@@ -119,6 +119,7 @@ Add to the `articles` array in `src/data/articles.ts`:
   title: 'Your Article Title',
   description: 'One-line card description.',
   browser: 'All iOS Browsers', // or 'iOS Safari'
+  published: '2026-11-03',
 }
 ```
 

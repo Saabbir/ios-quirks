@@ -138,7 +138,13 @@ title: string          // inserted into <title> tag
 description?: string   // meta description — defaults to site description
 ```
 
-Renders a sticky nav (56px, blurred `backdrop-filter`), a `<slot />`, and a footer. Do not add new nav items without updating the `nav-badge` count.
+Renders a sticky nav (56px, blurred `backdrop-filter`) with `NavSearch`, a `<slot />`, and a footer. Do not add new nav items without updating the `nav-badge` count.
+
+---
+
+### `NavSearch.astro`
+
+Compact navbar search. Empty focus shows the 3 newest articles; typing filters the full list and links to matches. Available on every page via `BaseLayout`.
 
 ---
 
@@ -264,9 +270,21 @@ Target: 3–5 links per article. Prefer primary sources (MDN, WebKit bugs, CSS s
 
 ---
 
+### `ArticleCard.astro`
+
+**Props:**
+```ts
+article: Article   // from src/data/articles.ts
+isNew?: boolean    // shows the New pill on the newest published article
+```
+
+Used on the home page Recent and All articles grids.
+
+---
+
 ## Home Page Article Card
 
-Each card is defined in the `articles` array in `src/data/articles.ts`. That list also drives previous/next links on article pages. Home cards are rendered from the same array in `src/pages/index.astro`:
+Each card is defined in the `articles` array in `src/data/articles.ts`. That list also drives previous/next links on article pages. The home page renders a Recent section (newest 3) and an All articles grid from the same array. Navbar search is handled by `NavSearch.astro`:
 
 ```ts
 {
@@ -275,6 +293,7 @@ Each card is defined in the `articles` array in `src/data/articles.ts`. That lis
   title: string        // must match the ArticleLayout title prop exactly
   description: string  // one-line card teaser (different from the article summary)
   browser: 'All iOS Browsers' | 'iOS Safari'
+  published: string    // YYYY-MM-DD — homepage sorts newest first and shows this date
 }
 ```
 
